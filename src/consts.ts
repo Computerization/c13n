@@ -1,4 +1,4 @@
-import type { Site, Metadata, Socials } from "@types";
+import type { Site, Metadata } from "@types";
 
 export const SITE: Site = {
   NAME: "c13n",
