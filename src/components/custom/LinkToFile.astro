@@ -5,21 +5,22 @@ type Props = {
     pdf?: boolean;
 }
 
-const { slug, latex , pdf } = Astro.props;
+const { slug, latex, pdf } = Astro.props;
 const path = `/blog/${slug}`;
 ---
-{(latex || latex) && (
+{(latex || pdf) && (
 <div class="font-base text-sm">
-    &bull;
-    Available in
+    &bull; Available in
     {latex && (
-            <a href=`${path}/index.latex` class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
-                <span class="underline">LaTeX</span>
-            </a>
+            <>
+                <a href={`${path}/index.latex`} class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
+                    <span class="underline">LaTeX</span>
+                </a>
+                {pdf && " and "}
+            </>
     )}
-    {latex && pdf && " and "}
     {pdf && (
-            <a href=`${path}/index.pdf` class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
+            <a href={`${path}/index.pdf`} class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
                 <span class="underline">PDF</span>
             </a>
     )}
