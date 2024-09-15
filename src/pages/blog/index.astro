@@ -17,7 +17,7 @@ type Acc = {
 
 const posts = data.reduce((acc: Acc, post) => {
   const year = post.data.date.getFullYear().toString();
-  const month = (post.data.date.getMonth() + 1).toString().padStart(2, '0'); // 以两位数字表示月份
+  const month = (post.data.date.getMonth() + 1).toString().padStart(2, "0"); // 以两位数字表示月份
 
   if (!acc[year]) {
     acc[year] = {};
