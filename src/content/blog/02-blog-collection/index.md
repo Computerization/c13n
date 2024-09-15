@@ -2,8 +2,8 @@
 title: "Blog Collection"
 description: "How to add posts to your blog."
 date: "Mar 21 2024"
-pdf: "test.pdf"
-latex: "test.latex"
+pdf: true
+latex: true
 ---
 
 The `blog` collections is found in `src/content/blog`.
