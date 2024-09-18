@@ -123,27 +123,23 @@ static void render_open_table_block(MD_TEX *r,
   RENDER_VERBATIM(r, "\\hline\n");
 }
 
-static void render_open_href_span(MD_TEX *r, const MD_SPAN_A_DETAIL *det) {
+static void render_open_a_span(MD_TEX *r, const MD_SPAN_A_DETAIL *det) {
   RENDER_VERBATIM(r, "\\href{");
   r->verbatim_type = 4;
   render_attribute(r, &det->href);
   r->verbatim_type = 0;
   RENDER_VERBATIM(r, "}{");
-  if (det->title.text != NULL)
-    render_attribute(r, &det->title);
-  else
-    render_attribute(r, &det->href);
-  RENDER_VERBATIM(r, "}\n");
 }
 
 static void render_open_img_span(MD_TEX *r, const MD_SPAN_IMG_DETAIL *det) {
   RENDER_VERBATIM(r, "\\begin{figure}[H]\n");
   RENDER_VERBATIM(r, "\\image{");
   render_attribute(r, &det->src);
-  RENDER_VERBATIM(r, "}\n");
+  RENDER_VERBATIM(r, "}\\label{");
 }
 
 static void render_close_img_span(MD_TEX *r, const MD_SPAN_IMG_DETAIL *det) {
+  RENDER_VERBATIM(r, "}\n");
   if (det->title.text != NULL) {
     RENDER_VERBATIM(r, "\\caption{");
     render_attribute(r, &det->title);
@@ -280,7 +276,7 @@ static int enter_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     RENDER_VERBATIM(r, "\\underline{");
     break;
   case MD_SPAN_A:
-    render_open_href_span(r, (MD_SPAN_A_DETAIL *)detail);
+    render_open_a_span(r, (MD_SPAN_A_DETAIL *)detail);
     break;
   case MD_SPAN_IMG:
     render_open_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);
@@ -319,6 +315,7 @@ static int leave_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     RENDER_VERBATIM(r, "}");
     break;
   case MD_SPAN_A:
+    RENDER_VERBATIM(r, "}");
     break;
   case MD_SPAN_IMG:
     render_close_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);

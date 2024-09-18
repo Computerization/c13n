@@ -84,8 +84,7 @@ This resulted TeX manuscript for reference:
 \section{Features}
 This is a Markdown to (La)TeX parser implemented in C, based on MD4C, with the following features:\par
 \begin{enumerate}
-\item \textbf{Compliance}: It is compliant to the latest version of \href{http://spec.commonmark.org/}{http://spec.commonmark.org/}
-CommonMark specification thanks to MD4C. Currently, we supports CommonMark 0.31.
+\item \textbf{Compliance}: It is compliant to the latest version of \href{http://spec.commonmark.org/}{CommonMark specification} thanks to MD4C. Currently, we supports CommonMark 0.31.
 \item \textbf{Extensions}: It supports some widely used extensions, namely: table, strikethrough, underline, and TeX style equations.
 \item \textbf{Lenience}: It follows completely the GIGO philosophy (garbage in, garbage out). It sees any sequence of bytes as valid input. It will not throw any error when parsing.
 \item \textbf{Performance}: It is very fast, parsing most of our posts in less than 1 ms.
@@ -104,8 +103,7 @@ cc -o md2tex md2tex.c md4c.c -O2 -Wall
 \section{MarkDown Spec}
 Generally, you should conform to the CommonMark spec when writing posts. However, because of the additional extensions, there are some extra rules.\par
 \subsection{Table}
-It supports \href{https://github.com/github/docs/blob/main/content/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables.md}{https://github.com/github/docs/blob/main/content/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables.md}
-GitHub-style tables.\par
+It supports \href{https://github.com/github/docs/blob/main/content/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables.md}{GitHub-style tables}.\par
 Note that in the generated (La)TeX manuscript, the align information of the columns are currently ignored, and default to left align. It may be supported in the future.\par
 \subsection{Strikethrough}
 It supports \verb!~delete~! (\del{delete}).\par
