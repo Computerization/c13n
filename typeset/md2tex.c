@@ -114,6 +114,8 @@ static void render_open_code_block(MD_TEX *r, const MD_BLOCK_CODE_DETAIL *det) {
 
 static void render_open_table_block(MD_TEX *r,
                                     const MD_BLOCK_TABLE_DETAIL *det) {
+  RENDER_VERBATIM(r, "\\begin{table}[H]\n");
+  RENDER_VERBATIM(r, "\\centering\n");
   RENDER_VERBATIM(r, "\\begin{tabular}{");
   int cn = det->col_count;
   r->table_col_count = cn;
@@ -244,6 +246,7 @@ static int leave_block_callback(MD_BLOCKTYPE type, void *detail,
     break;
   case MD_BLOCK_TABLE:
     RENDER_VERBATIM(r, "\\end{tabular}\n");
+    RENDER_VERBATIM(r, "\\end{table}\n");
     break;
   case MD_BLOCK_THEAD:
     break;
