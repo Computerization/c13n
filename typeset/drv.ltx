@@ -1,0 +1,75 @@
+\documentclass{article}
+
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{graphicx}\setkeys{Gin}{width=.75\csname Gin@nat@width\endcsname,keepaspectratio}
+\usepackage{lua-ul}
+
+\makeatletter
+
+\let\underline\underLine
+\let\del\strikeThrough
+
+\newcommand{\thematic}{\vspace{2.5ex}\par\noindent%
+ \parbox{\textwidth}{\centering{*}\\[-4pt]{*}\enspace{*}\vspace{2ex}}\par}
+
+\def\inner@ifempty#1{\begingroup\toks0={#1}\edef\p@r@m{\the\toks0}%
+ \expandafter\endgroup\ifx\p@r@m\empty\expandafter\@firstoftwo\else%
+ \expandafter\@secondoftwo\fi}
+\begingroup\catcode`X=3\gdef\expnd@ifempty#1{%
+ \ifX\detokenize{#1}X\expandafter\@firstoftwo\else%
+ \expandafter\@secondoftwo\fi}\endgroup
+
+\let\furui@label\label
+\def\label#1{\expnd@ifempty{#1}\relax\furui@label{#1}}
+
+%\def\hyper@link@[#1]#2#3#4{%
+% \Hy@ifempty{#4}{% link text
+%  \Hy@Warning{Suppressing empty link}%
+% }{%
+%  \begingroup
+%   \protected@edef\Hy@tempa{#2}%
+%   \edef\Hy@tempb{#3}%
+%   \ifx\Hy@tempa\@empty
+%    \ifx\Hy@tempb\@empty
+%     \Hy@Warning{Suppressing link with empty target}%
+%     \toks@{%
+%      \endgroup
+%      \@secondoftwo
+%     }%
+%    \else
+%     \toks@{%
+%      \endgroup
+%      \hyper@link{#1}%
+%     }%
+%    \fi
+%   \else
+%    \toks@{%
+%     \endgroup
+%     \expandafter\hyper@readexternallink#2\\{#1}%
+%    }%
+%   \fi
+%    \Hy@safe@activesfalse
+%    \toks@\expandafter{%
+%     \the\expandafter\toks@
+%     \expandafter{\Hy@tempb}{#4}%
+%    }%
+%   \the\toks@
+%  }%
+% }
+
+\let\href\furui@hyperlink
+\def\inner@makeother#1{\catcode`#112\relax}
+\def\href{\leavevmode\bgroup\let\do\inner@makeother\dospecials\inner@href}
+\begingroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
+ \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\endgroup
+
+\def\image#1{\includegraphics{#1}}
+
+\makeatother
+
+\begin{document}
+
+\input index.tex
+
+\end{document}

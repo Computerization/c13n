@@ -133,6 +133,7 @@ static void render_open_a_span(MD_TEX *r, const MD_SPAN_A_DETAIL *det) {
 
 static void render_open_img_span(MD_TEX *r, const MD_SPAN_IMG_DETAIL *det) {
   RENDER_VERBATIM(r, "\\begin{figure}[H]\n");
+  RENDER_VERBATIM(r, "\\centering\n");
   RENDER_VERBATIM(r, "\\image{");
   render_attribute(r, &det->src);
   RENDER_VERBATIM(r, "}\\label{");
