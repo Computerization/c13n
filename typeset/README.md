@@ -143,7 +143,7 @@ We use `\underLine` and `\strikeThrough` to replace the LaTeX2e provided buggy `
 
 ### Patch
 
-Because SAX-like parser cannot elegantly capture the text between span delimiters, control sequence like the above will appear.
+Because SAX-like parser cannot elegantly capture the text between span delimiters, control sequence as listed below may appear in several circumstances.
 
 ```TeX
 \href{<url>}{} % from [](<url>)
@@ -153,7 +153,7 @@ Because SAX-like parser cannot elegantly capture the text between span delimiter
 Instead of using further dark magic in the parser (i.e., modify the text callback), we handle this in LaTeX.
 
 The control sequence `\href` is a hard one, because it relies on nasty catcode modifications to read in url containing chars that normally need to be escaped in a TeX manuscript, and thus means we cannot simply gobble the url into a parameter and further patch it.
-Also because of the complex infrastructure of hyperref, a custom `\href` has been implemented to solve this problem. It should have the exact functionality of `\href`, except when `#2` is empty, we supply one which is `\url{#1}`.
+Also because of the complex infrastructure of hyperref, a custom `\href` has been implemented to solve this problem. It should have the exact functionality of `\href`, except when `#2` is empty, we supply one which has value `\url{#1}`.
 This command is LuaTeX specific.
 
 ```TeX
