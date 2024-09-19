@@ -132,3 +132,68 @@ x$a + b = c$ or $a + b = c$y will not be rendered as math (all $ rendered as \$)
 ```
 
 </details>
+
+## About the `drv.ltx` style sheet
+
+It works only under LuaLaTeX.
+
+### Text style
+
+We use `\underLine` and `\strikeThrough` to replace the LaTeX2e provided buggy `\underline` and the undefined `\del`.
+
+### Patch
+
+Because SAX-like parser cannot elegantly capture the text between span delimiters, control sequence like the above will appear.
+
+```TeX
+\href{<url>}{} % from [](<url>)
+\label{} % from an image that does not have a label
+```
+
+Instead of using further dark magic in the parser (i.e., modify the text callback), we handle this in LaTeX.
+
+The control sequence `\href` is a hard one, because it relies on nasty catcode modifications to read in url containing chars that normally need to be escaped in a TeX manuscript, and thus means we cannot simply gobble the url into a parameter and further patch it.
+Also because of the complex infrastructure of hyperref, a custom `\href` has been implemented to solve this problem. It should have the exact functionality of `\href`, except when `#2` is empty, we supply one which is `\url{#1}`.
+This command is LuaTeX specific.
+
+```TeX
+\def\inner@ifempty#1{\begingroup\toks0={#1}\edef\p@r@m{\the\toks0}%
+ \expandafter\endgroup\ifx\p@r@m\empty\expandafter\@firstoftwo\else%
+ \expandafter\@secondoftwo\fi}
+\def\inner@makeother#1{\catcode`#112\relax}
+\def\href{\leavevmode\bgroup\let\do\inner@makeother\dospecials\inner@href}
+\begingroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
+ \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\endgroup
+```
+
+Documenting this is unnecessary I think.
+
+Without utilizing catcode dark magic, `\label` is a really easy one.
+
+```TeX
+\begingroup\catcode`X=3\gdef\expnd@ifempty#1{%
+ \ifX\detokenize{#1}X\expandafter\@firstoftwo\else%
+ \expandafter\@secondoftwo\fi}\endgroup
+\let\furui@label\label
+\def\label#1{\expnd@ifempty{#1}\relax\furui@label{#1}}
+```
+
+### Blocks
+
+We include the `float` package as every float uses `[H]`. As graphics are represented using the `\image` control sequence in the parser, we have the following definition.
+
+```TeX
+\setkeys{Gin}{width=.75\csname Gin@nat@width\endcsname,keepaspectratio}
+\def\image#1{\includegraphics{#1}}
+```
+
+Another rather simple one is the thematic break `\thematic`.
+
+```TeX
+\newcommand{\thematic}{\vspace{2.5ex}\par\noindent%
+ \parbox{\textwidth}{\centering{*}\\[-4pt]{*}\enspace{*}\vspace{2ex}}\par}
+```
+
+### CJK
+
+Currently unimplemented, I think I shall first build the make system.
