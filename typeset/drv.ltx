@@ -65,6 +65,9 @@
 \begingroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
  \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\endgroup
 
+\let\furui@maketitle\maketitle
+\def\maketitle{\furui@maketitle\def\title##1{\relax}}
+
 \def\image#1{\includegraphics{#1}}
 
 \makeatother
