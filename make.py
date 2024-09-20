@@ -50,7 +50,7 @@ def texcomp(dir):
     os.chdir(tmp_dir)
     os.system("lualatex index.ltx --interaction=batchmode")
     os.chdir(pwd)
-    shutil.copy(tmp_dir + "index.ltx", dir + "/index.tex")
+    shutil.copy(tmp_dir + "index.tex", dir + "/index.tex")
     shutil.copy(tmp_dir + "index.pdf", dir + "/index.pdf")
 
 def pdfgenr(dir):
