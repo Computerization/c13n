@@ -197,3 +197,9 @@ Another rather simple one is the thematic break `\thematic`.
 ### CJK
 
 Currently unimplemented, I think I shall first build the make system.
+
+## The build system `make.py`
+
+It's written in Python, and thus should be portable.
+
+The only thing that should be mentioned about it is that please do not use `webp` as image format.

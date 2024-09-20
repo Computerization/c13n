@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass{book}
 
 \usepackage{float}
 \usepackage{xurl}
@@ -20,9 +20,9 @@
 \def\inner@ifempty#1{\begingroup\toks0={#1}\edef\p@r@m{\the\toks0}%
  \expandafter\endgroup\ifx\p@r@m\empty\expandafter\@firstoftwo\else%
  \expandafter\@secondoftwo\fi}
-\begingroup\catcode`X=3\gdef\expnd@ifempty#1{%
+\bgroup\catcode`X=3\gdef\expnd@ifempty#1{%
  \ifX\detokenize{#1}X\expandafter\@firstoftwo\else%
- \expandafter\@secondoftwo\fi}\endgroup
+ \expandafter\@secondoftwo\fi}\egroup
 
 \let\furui@label\label
 \def\label#1{\expnd@ifempty{#1}\relax\furui@label{#1}}
@@ -65,8 +65,8 @@
 \let\href\furui@href
 \def\inner@makeother#1{\catcode`#112\relax}
 \def\href{\leavevmode\bgroup\let\do\inner@makeother\dospecials\inner@href}
-\begingroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
- \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\endgroup
+\bgroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
+ \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\egroup
 
 \let\furui@maketitle\maketitle
 \def\maketitle{\furui@maketitle\def\title##1{\relax}}

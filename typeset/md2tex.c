@@ -10,6 +10,7 @@ struct MD_TEX_tag {
   void (*process_output)(const MD_CHAR *, MD_SIZE, void *);
   void *userdata;
   unsigned flags;
+  int heading_scope;
   int table_col_level;
   int table_col_count;
   int list_item_level;
@@ -179,6 +180,7 @@ static int enter_block_callback(MD_BLOCKTYPE type, void *detail,
     break;
   case MD_BLOCK_H:
     RENDER_VERBATIM(r, head[((MD_BLOCK_H_DETAIL *)detail)->level - 1]);
+    r->heading_scope = 1;
     break;
   case MD_BLOCK_CODE:
     render_open_code_block(r, (const MD_BLOCK_CODE_DETAIL *)detail);
@@ -233,6 +235,7 @@ static int leave_block_callback(MD_BLOCKTYPE type, void *detail,
     break;
   case MD_BLOCK_H:
     RENDER_VERBATIM(r, "}\n");
+    r->heading_scope = 0;
     break;
   case MD_BLOCK_CODE:
     RENDER_VERBATIM(r, "\\end{verbatim}\n");
@@ -286,8 +289,11 @@ static int enter_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     render_open_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);
     break;
   case MD_SPAN_CODE:
-    RENDER_VERBATIM(r, "\\verb!");
-    r->verbatim_type = 2;
+    if (r->heading_scope == 0) {
+      RENDER_VERBATIM(r, "\\verb!");
+      r->verbatim_type = 2;
+    } else
+      RENDER_VERBATIM(r, "\\texttt{");
     break;
   case MD_SPAN_DEL:
     RENDER_VERBATIM(r, "\\del{");
@@ -325,8 +331,11 @@ static int leave_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     render_close_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);
     break;
   case MD_SPAN_CODE:
-    RENDER_VERBATIM(r, "!");
-    r->verbatim_type = 0;
+    if (r->heading_scope == 0) {
+      RENDER_VERBATIM(r, "!");
+      r->verbatim_type = 0;
+    } else
+      RENDER_VERBATIM(r, "}");
     break;
   case MD_SPAN_DEL:
     RENDER_VERBATIM(r, "}");
