@@ -25,7 +25,7 @@ def metaext(src):
                 lines[fpos] = ""
                 meta[key.strip()] = val.strip()
         if len(meta):
-            print(f"title: {meta.get("title")}; author: {meta.get("author")}; date: {meta.get("date")}")
+            print("title: %s; author: %s; date: %s" % (meta.get("title"), meta.get("author"), meta.get("date")))
             fsrc.seek(0)
             fsrc.truncate()
             fsrc.writelines(lines)
@@ -36,7 +36,7 @@ def metainj(dst):
     with open(dst, "r+") as fdst:
         print("   Injecting metadata:")
         manu = fdst.readlines()
-        manu.insert(0, f"\\title{{{meta.get("title")}}}\n\\author{{{meta.get("author")}}}\n\\date{{{meta.get("date")}}}\n\\maketitle\n")
+        manu.insert(0, "\\title{%s}\n\\author{%s}\n\\date{%s}\n\\maketitle\n" % (meta.get("title"), meta.get("author"), meta.get("date")))
         fdst.seek(0)
         fdst.truncate()
         fdst.writelines(manu)
