@@ -3,6 +3,7 @@ title: "The \texttt{c13n} System Backend Introduction"
 author: "rne"
 date: "Sep 20, 2024"
 description: "Documenting hidden details."
+latex: true
 ---
 
 ## About the `md2tex` utility
