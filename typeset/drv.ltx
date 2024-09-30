@@ -66,7 +66,7 @@
 \def\inner@makeother#1{\catcode`#112\relax}
 \def\href{\leavevmode\bgroup\let\do\inner@makeother\dospecials\inner@href}
 \bgroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
- \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\egroup
+ \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>]\inner@ifempty[#2][\url[#1]][#2]\pdfextension endlink \egroup]\egroup
 
 \let\furui@maketitle\maketitle
 \def\maketitle{\furui@maketitle\def\title##1{\relax}}
