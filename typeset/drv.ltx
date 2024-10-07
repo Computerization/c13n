@@ -9,6 +9,7 @@
  luatexbase.add_to_callback('show_warning_message', be_quiet, 'stop show warning message')
 }
 
+%\directlua{fonts.names.scan(".")}
 \makeatletter
  \def\ltj@stdmcfont{file:NotoSansSC-Regular.otf}
  \def\ltj@stdgtfont{file:NotoSansSC-Regular.otf}

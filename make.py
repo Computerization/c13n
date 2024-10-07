@@ -75,7 +75,7 @@ os.system("make")
 os.chdir(cwd)
 
 for posts in sorted(os.listdir(src_dir)):
-    if not os.path.exists(src_dir + posts + "/index.tex") and not os.path.exists(src_dir + posts + "/index.pdf"):
+    if not os.path.exists(src_dir + posts + "/index.tex") or not os.path.exists(src_dir + posts + "/index.pdf"):
         print(f"      Processing post: {posts}")
         pdfgenr(src_dir + posts)
 
