@@ -104,7 +104,7 @@ static void render_attribute(MD_TEX *r, const MD_ATTRIBUTE *attr) {
 }
 
 static void render_open_code_block(MD_TEX *r, const MD_BLOCK_CODE_DETAIL *det) {
-  RENDER_VERBATIM(r, "\\begin{verbatim}");
+  RENDER_VERBATIM(r, "\\begin{lstlisting}");
   if (det->lang.text != NULL) {
     RENDER_VERBATIM(r, "[language=");
     render_attribute(r, &det->lang);
@@ -238,7 +238,7 @@ static int leave_block_callback(MD_BLOCKTYPE type, void *detail,
     r->heading_scope = 0;
     break;
   case MD_BLOCK_CODE:
-    RENDER_VERBATIM(r, "\\end{verbatim}\n");
+    RENDER_VERBATIM(r, "\\end{lstlisting}\n");
     r->verbatim_type = 0;
     break;
   case MD_BLOCK_HTML:

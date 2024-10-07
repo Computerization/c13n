@@ -1,9 +1,45 @@
-\documentclass{book}
+\directlua{
+ function be_quiet () end
+ luatexbase.add_to_callback('start_run', be_quiet, 'stop start run')
+ luatexbase.add_to_callback('stop_run', be_quiet, 'stop stop run')
+ luatexbase.add_to_callback('start_page_number', be_quiet, 'stop start page')
+ luatexbase.add_to_callback('stop_page_number', be_quiet, 'stop stop page')
+ luatexbase.add_to_callback('start_file', be_quiet, 'stop start file')
+ luatexbase.add_to_callback('stop_file', be_quiet, 'stop stop file')
+ luatexbase.add_to_callback('show_warning_message', be_quiet, 'stop show warning message')
+}
+
+\makeatletter
+ \def\ltj@stdmcfont{HiraginoMinchoProN}
+ \def\ltj@stdgtfont{HiraginoSans}
+ \def\ltj@stdyokojfm{eva/smpl,nstd}
+ \def\ltj@stdtatejfm{eva/smpl,nstd,vert}
+\makeatother
+
+\RequirePackage[immediate]{silence}
+\WarningsOff % usually shouldn't matter
+\ErrorsOff[Listings] % get rid of the ``Language not found'' error
+
+\documentclass{ltjsreport}
+%\let\chapter\section
+%\let\section\subsection
+%\let\subsection\subsubsection
+%\let\subsubsection\paragraph
 
 \usepackage{float}
 \usepackage{xurl}
+\usepackage{listings}\lstset{basicstyle=\ttfamily,
+                             breaklines=true,
+                             frame=tlb,
+                             numbers=left,
+                             numberstyle=\tiny,
+                             stepnumber=2,
+                             numbersep=5pt,
+                             columns=fullflexible,
+                             postbreak=\mbox{$\hookrightarrow$\space}}
 \usepackage{graphicx}\setkeys{Gin}{width=.75\csname Gin@nat@width\endcsname,keepaspectratio}
 \usepackage{lua-ul}
+\usepackage{microtype}
 \usepackage{hyperref}
 
 \makeatletter
