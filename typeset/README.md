@@ -196,7 +196,7 @@ Another rather simple one is the thematic break `\thematic`.
 
 ### CJK
 
-Currently unimplemented, I think I shall first build the make system.
+We currently support 中文 using `luatexja`. To rebuild all posts, you only need a *complete* TeXLive (or MacTeX) installation as the appropriate font is distributed with this repo.
 
 ## The build system `make.py`
 
