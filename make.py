@@ -1,7 +1,9 @@
 import os
+import sys
 import shutil
 
 src_dir = "./src/content/blog/"
+mtl_dir = "./src/content/monthly/"
 utl_dir = "./typeset/"
 fnt_dir = "./typeset/font/"
 tmp_dir = "./.tmp/"
@@ -63,23 +65,36 @@ def pdfgenr(dir):
     texcomp(dir)
     shutil.rmtree(tmp_dir)
 
-# save pwd
-cwd = os.getcwd()
-print(f"     Making directory: {cwd}")
+def post():
+    cwd = os.getcwd()
+    print(f"     Making directory: {cwd}")
+    os.chdir(utl_dir)
+    os.system("make")
+    os.chdir(cwd)
+    for posts in sorted(os.listdir(src_dir)):
+        if not os.path.exists(src_dir + posts + "/index.tex") or not os.path.exists(src_dir + posts + "/index.pdf"):
+            print(f"      Processing post: {posts}")
+            pdfgenr(src_dir + posts)
+    os.chdir(utl_dir)
+    print("          Cleaning up:")
+    os.system("make clean")
 
-# make the executable
-os.chdir(utl_dir)
-os.system("make")
+def monthly():
+    cwd = os.getcwd()
+    print(f"     Making directory: {cwd}")
+    os.chdir(utl_dir)
+    os.system("make")
+    os.chdir(cwd)
+   #for posts in sorted(os.listdir(src_dir)):
+    os.chdir(utl_dir)
+    print("          Cleaning up:")
+    os.system("make clean")
 
-# restore current directory
-os.chdir(cwd)
-
-for posts in sorted(os.listdir(src_dir)):
-    if not os.path.exists(src_dir + posts + "/index.tex") or not os.path.exists(src_dir + posts + "/index.pdf"):
-        print(f"      Processing post: {posts}")
-        pdfgenr(src_dir + posts)
-
-# cleanup
-os.chdir(utl_dir)
-print("          Cleaning up:")
-os.system("make clean")
+if len(sys.argv) != 2:
+    print("make: Incorrect options...")
+elif sys.argv[1] == "post":
+    post()
+elif sys.argv[1] == "monthly":
+    monthly()
+else:
+    print("make: Doing nothing...")
