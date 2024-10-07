@@ -3,6 +3,7 @@ import shutil
 
 src_dir = "./src/content/blog/"
 utl_dir = "./typeset/"
+fnt_dir = "./typeset/font/"
 tmp_dir = "./.tmp/"
 
 def metaext(src):
@@ -44,6 +45,8 @@ def metainj(dst):
 def texcomp(dir):
     print("       Generating PDF:")
     shutil.copy(utl_dir + "drv.ltx", tmp_dir + "index.ltx")
+    for fonts in os.listdir(fnt_dir):
+        shutil.copy(fnt_dir + fonts, tmp_dir + fonts)
     pwd = os.getcwd()
     os.chdir(tmp_dir)
     os.system("lualatex index.ltx --interaction=batchmode")
