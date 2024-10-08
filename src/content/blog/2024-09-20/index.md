@@ -6,6 +6,30 @@ description: "Documenting hidden details."
 latex: true
 ---
 
+## External Dependencies
+
+### `md2tex` utility
+
+* `clang`, `gcc` or any working c compiler.
+
+* `gnu make`.
+
+* `glibc`, `musl`, or any c standard library.
+
+### `drv.ltx` driver
+
+* LuaTeX.
+
+* LuaTeX-ja and evangelion-jfm.
+
+* Macro-package `float`, `xurl`, `listings`, `graphicx`, `lua-ul`, `fontspec`, `micortype` and `hyperref`.
+
+All of these above are contained in a standard *full* TeXLive (or MacTeX) installation that is released after 2024.
+
+### `make.py` build system
+
+* Python3 (tested on 3.9.6).
+
 ## About the `md2tex` utility
 
 ### Features
@@ -151,3 +175,5 @@ We currently support 中文 using `luatexja`. To rebuild all posts, you only nee
 It's written in Python, and thus should be portable.
 
 The only thing that should be mentioned about it is that please do not use `webp` as image format.
+
+Use `python make.py post` to make posts (existing posts will not trigger rebuild) and `python make.py monthly` to make all the monthly.

@@ -1,0 +1,127 @@
+\directlua{
+ function be_quiet () end
+ luatexbase.add_to_callback('start_run', be_quiet, 'stop start run')
+ luatexbase.add_to_callback('stop_run', be_quiet, 'stop stop run')
+ luatexbase.add_to_callback('start_page_number', be_quiet, 'stop start page')
+ luatexbase.add_to_callback('stop_page_number', be_quiet, 'stop stop page')
+ luatexbase.add_to_callback('start_file', be_quiet, 'stop start file')
+ luatexbase.add_to_callback('stop_file', be_quiet, 'stop stop file')
+ luatexbase.add_to_callback('show_warning_message', be_quiet, 'stop show warning message')
+}
+
+%\directlua{fonts.names.scan(".")}
+\makeatletter
+ \def\ltj@stdmcfont{file:NotoSansSC-Regular.otf}
+ \def\ltj@stdgtfont{file:NotoSansSC-Regular.otf}
+ \def\ltj@stdyokojfm{eva/smpl,nstd}
+ \def\ltj@stdtatejfm{eva/smpl,nstd,vert}
+\makeatother
+
+\RequirePackage[immediate]{silence}
+\WarningsOff % usually shouldn't matter
+\ErrorsOff[Listings] % get rid of the ``Language not found'' error
+
+\documentclass{ltjsreport}
+\pagestyle{headings}
+%\let\chapter\section
+%\let\section\subsection
+%\let\subsection\subsubsection
+%\let\subsubsection\paragraph
+
+\usepackage{float}
+\usepackage{xurl}
+\usepackage{listings}\lstset{basicstyle=\ttfamily,
+                             breaklines=true,
+                             frame=tlb,
+                             numbers=left,
+                             numberstyle=\tiny,
+                             stepnumber=2,
+                             numbersep=5pt,
+                             columns=fullflexible,
+                             postbreak=\mbox{$\hookrightarrow$\space}}
+\usepackage{graphicx}\setkeys{Gin}{width=.75\csname Gin@nat@width\endcsname,keepaspectratio}
+\usepackage{lua-ul}
+\usepackage{luatexja-fontspec}
+\setmonofont{SpaceMono-Regular.ttf}[Scale=MatchLowercase]
+\setmainfont{SpaceGrotesk-VF.ttf}[Instance=Regular,
+                                  BoldFont=SpaceGrotesk-VF.ttf,
+                                  ItalicFont=SpaceGrotesk-VF.ttf,
+                                  BoldFeatures={Instance=Bold},
+                                  ItalicFeatures={Instance=Light}]
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\makeatletter
+
+\catcode`"=13
+\let"\relax
+
+\let\underline\underLine
+\let\del\strikeThrough
+
+\newcommand{\thematic}{\vspace{2.5ex}\par\noindent%
+ \parbox{\textwidth}{\centering{*}\\[-4pt]{*}\enspace{*}\vspace{2ex}}\par}
+
+\def\inner@ifempty#1{\begingroup\toks0={#1}\edef\p@r@m{\the\toks0}%
+ \expandafter\endgroup\ifx\p@r@m\empty\expandafter\@firstoftwo\else%
+ \expandafter\@secondoftwo\fi}
+\bgroup\catcode`X=3\gdef\expnd@ifempty#1{%
+ \ifX\detokenize{#1}X\expandafter\@firstoftwo\else%
+ \expandafter\@secondoftwo\fi}\egroup
+
+\let\furui@label\label
+\def\label#1{\expnd@ifempty{#1}\relax\furui@label{#1}}
+
+%\def\hyper@link@[#1]#2#3#4{%
+% \Hy@ifempty{#4}{% link text
+%  \Hy@Warning{Suppressing empty link}%
+% }{%
+%  \begingroup
+%   \protected@edef\Hy@tempa{#2}%
+%   \edef\Hy@tempb{#3}%
+%   \ifx\Hy@tempa\@empty
+%    \ifx\Hy@tempb\@empty
+%     \Hy@Warning{Suppressing link with empty target}%
+%     \toks@{%
+%      \endgroup
+%      \@secondoftwo
+%     }%
+%    \else
+%     \toks@{%
+%      \endgroup
+%      \hyper@link{#1}%
+%     }%
+%    \fi
+%   \else
+%    \toks@{%
+%     \endgroup
+%     \expandafter\hyper@readexternallink#2\\{#1}%
+%    }%
+%   \fi
+%    \Hy@safe@activesfalse
+%    \toks@\expandafter{%
+%     \the\expandafter\toks@
+%     \expandafter{\Hy@tempb}{#4}%
+%    }%
+%   \the\toks@
+%  }%
+% }
+
+\let\href\furui@href
+\def\inner@makeother#1{\catcode`#112\relax}
+\def\href{\leavevmode\bgroup\let\do\inner@makeother\dospecials\inner@href}
+\bgroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
+ \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>]\inner@ifempty[#2][\url[#1]][#2]\pdfextension endlink \egroup]\egroup
+
+\let\furui@maketitle\maketitle
+\def\maketitle{\furui@maketitle\def\title##1{\relax}}
+
+\def\image#1{\includegraphics{#1}}
+
+\makeatother
+
+\begin{document}\parindent=0pt\parsep=12pt
+
+\input index.tex
+
+\end{document}

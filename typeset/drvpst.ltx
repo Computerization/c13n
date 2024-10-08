@@ -21,11 +21,12 @@
 \WarningsOff % usually shouldn't matter
 \ErrorsOff[Listings] % get rid of the ``Language not found'' error
 
-\documentclass{ltjsreport}
-%\let\chapter\section
-%\let\section\subsection
-%\let\subsection\subsubsection
-%\let\subsubsection\paragraph
+\documentclass{ltjsarticle}
+\pagestyle{headings}
+\let\chapter\section
+\let\section\subsection
+\let\subsection\subsubsection
+\let\subsubsection\paragraph
 
 \usepackage{float}
 \usepackage{xurl}
@@ -40,6 +41,13 @@
                              postbreak=\mbox{$\hookrightarrow$\space}}
 \usepackage{graphicx}\setkeys{Gin}{width=.75\csname Gin@nat@width\endcsname,keepaspectratio}
 \usepackage{lua-ul}
+\usepackage{luatexja-fontspec}
+\setmonofont{SpaceMono-Regular.ttf}[Scale=MatchLowercase]
+\setmainfont{SpaceGrotesk-VF.ttf}[Instance=Regular,
+                                  BoldFont=SpaceGrotesk-VF.ttf,
+                                  ItalicFont=SpaceGrotesk-VF.ttf,
+                                  BoldFeatures={Instance=Bold},
+                                  ItalicFeatures={Instance=Light}]
 \usepackage{microtype}
 \usepackage{hyperref}
 
@@ -112,7 +120,7 @@
 
 \makeatother
 
-\begin{document}
+\begin{document}\parindent=0pt\parsep=12pt
 
 \input index.tex
 

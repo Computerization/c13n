@@ -46,7 +46,7 @@ def metainj(dst):
 
 def texcomp(dir):
     print("       Generating PDF:")
-    shutil.copy(utl_dir + "drv.ltx", tmp_dir + "index.ltx")
+    shutil.copy(utl_dir + "drvpst.ltx", tmp_dir + "index.ltx")
     for fonts in os.listdir(fnt_dir):
         shutil.copy(fnt_dir + fonts, tmp_dir + fonts)
     pwd = os.getcwd()

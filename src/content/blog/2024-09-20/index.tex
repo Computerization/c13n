@@ -2,6 +2,24 @@
 \author{"rne"}
 \date{"Sep 20, 2024"}
 \maketitle
+\chapter{External Dependencies}
+\section{\texttt{md2tex} utility}
+\begin{enumerate}
+\item \verb!clang!, \verb!gcc! or any working c compiler.
+\item \verb!gnu make!.
+\item \verb!glibc!, \verb!musl!, or any c standard library.
+\end{enumerate}
+\section{\texttt{drv.ltx} driver}
+\begin{enumerate}
+\item LuaTeX.
+\item LuaTeX-ja and evangelion-jfm.
+\item Macro-package \verb!float!, \verb!xurl!, \verb!listings!, \verb!graphicx!, \verb!lua-ul!, \verb!fontspec!, \verb!micortype! and \verb!hyperref!.
+\end{enumerate}
+All of these above are contained in a standard \textit{full} TeXLive (or MacTeX) installation that is released after 2024.\par
+\section{\texttt{make.py} build system}
+\begin{enumerate}
+\item Python3 (tested on 3.9.6).
+\end{enumerate}
 \chapter{About the \texttt{md2tex} utility}
 \section{Features}
 This is a Markdown to (La)TeX parser implemented in C, based on MD4C, with the following features:\par
@@ -99,3 +117,4 @@ We currently support 中文 using \verb!luatexja!. To rebuild all posts, you onl
 \chapter{The build system \texttt{make.py}}
 It's written in Python, and thus should be portable.\par
 The only thing that should be mentioned about it is that please do not use \verb!webp! as image format.\par
+Use \verb!python make.py post! to make posts (existing posts will not trigger rebuild) and \verb!python make.py monthly! to make all the monthly.\par
