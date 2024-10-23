@@ -80,15 +80,7 @@ def post():
     os.system("make clean")
 
 def monthly():
-    cwd = os.getcwd()
-    print(f"     Making directory: {cwd}")
-    os.chdir(utl_dir)
-    os.system("make")
-    os.chdir(cwd)
-   #for posts in sorted(os.listdir(src_dir)):
-    os.chdir(utl_dir)
-    print("          Cleaning up:")
-    os.system("make clean")
+    print("unimplemented")
 
 if len(sys.argv) != 2:
     print("make: Incorrect options...")
