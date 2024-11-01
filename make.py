@@ -46,17 +46,15 @@ def metainj(dst):
         fdst.truncate()
         fdst.writelines(manu)
 
-def texcomp(dir):
+def texcomp(drv):
     print("       Generating PDF:")
-    shutil.copy(utl_dir + "drvpst.ltx", tmp_dir + "index.ltx")
+    shutil.copy(utl_dir + drv, tmp_dir + "index.ltx")
     for fonts in os.listdir(fnt_dir):
         shutil.copy(fnt_dir + fonts, tmp_dir + fonts)
     pwd = os.getcwd()
     os.chdir(tmp_dir)
     os.system("lualatex index.ltx --interaction=batchmode")
     os.chdir(pwd)
-    shutil.copy(tmp_dir + "index.tex", dir + "/index.tex")
-    shutil.copy(tmp_dir + "index.pdf", dir + "/index.pdf")
 
 def pdfgenr(dir):
     shutil.copytree(dir, tmp_dir)
@@ -64,7 +62,9 @@ def pdfgenr(dir):
     print("           Converting:")
     os.system(f"{utl_dir}md2tex {tmp_dir}index.md {tmp_dir}index.tex")
     metainj(tmp_dir + "index.tex")
-    texcomp(dir)
+    texcomp("drvpst.ltx")
+    shutil.copy(tmp_dir + "index.tex", dir + "/index.tex")
+    shutil.copy(tmp_dir + "index.pdf", dir + "/index.pdf")
     shutil.rmtree(tmp_dir)
 
 def post():
@@ -83,6 +83,7 @@ def post():
 
 def batch():
     cwd = os.getcwd()
+    print(f"     Making directory: {cwd}")
     posts = sorted(os.listdir(src_dir))
     compiled = [i.split(".")[0].split("_") for i in sorted(os.listdir(mtl_dir))]
     compiled_hsh = {
@@ -92,19 +93,19 @@ def batch():
         if bch_start + bch_size > len(posts): break
         bch_range = list(range(bch_start, bch_start + bch_size))
         hsh = abs(hash(" ".join([posts[i] for i in bch_range])))
-        if compiled_hsh[bch_id] == hsh: continue
+        #if compiled_hsh[bch_id] == hsh: continue
+        print(f"   Processing monthly: {hsh}")
         filename = f"Compilation_{bch_id}_{hsh}"
-        with open(f"{tmp_dir}/index.tex", "w+", encoding="utf-8") as f:
-            f.write("\\mlytitle{" + f"c13n #{bch_id}" + "}\n")
+        os.mkdir(tmp_dir)
+        with open(f"{tmp_dir}index.tex", "w+", encoding="utf-8") as f:
+            f.write("\\mlytitle{" + f"c13n \\#{bch_id}" + "}\n")
             for i in bch_range:
-                with open(f"{src_dir}/{posts[i]}/index.tex", "r", encoding="utf-8") as item:
+                with open(f"{src_dir}{posts[i]}/index.tex", "r", encoding="utf-8") as item:
                     f.write(item.read())
                 f.write("\n")
-			# TODO: The index.tex file is hereby concatenated.
-            # Current working directory is not changed (still /).
-            # Compile the file and put the PDF file with name as
-            # the variable `filename` under `mtl_dir`.
-    os.chdir(cwd)
+        texcomp("drvmly.ltx")
+        shutil.copy(tmp_dir + "index.pdf", mtl_dir + filename.lower() + ".pdf")
+        shutil.rmtree(tmp_dir)
 
 if len(sys.argv) != 2:
     print("make: Incorrect options...")

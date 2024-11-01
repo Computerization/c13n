@@ -21,7 +21,7 @@
 \WarningsOff % usually shouldn't matter
 \ErrorsOff[Listings] % get rid of the ``Language not found'' error
 
-\documentclass{ltjsreport}
+\documentclass[openany]{ltjsbook}
 \pagestyle{headings}
 %\let\chapter\section
 %\let\section\subsection
@@ -113,14 +113,17 @@
 \bgroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
  \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>]\inner@ifempty[#2][\url[#1]][#2]\pdfextension endlink \egroup]\egroup
 
-\let\furui@maketitle\maketitle
-\def\maketitle{\furui@maketitle\def\title##1{\relax}}
-
 \def\image#1{\includegraphics{#1}}
 
 \makeatother
 
 \begin{document}\parindent=0pt\parsep=12pt
+
+\def\mlytitle#1{\title{#1}\author{c13n}\date{\today}\maketitle
+                \gdef\title##1{\def\TITLE{##1\rlap{\quad\vtop{\normalsize\hbox{\AUTHOR}\hbox{\DATE}}}}}
+                \gdef\author##1{\xdef\AUTHOR{##1}}
+                \gdef\date##1{\xdef\DATE{##1}}
+                \gdef\maketitle{\part{\TITLE}}}
 
 \input index.tex
 
