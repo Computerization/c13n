@@ -1,5 +1,5 @@
 ---
-title: "The \texttt{c13n} System Backend Introduction"
+title: "The C13N System Backend Introduction"
 author: "rne"
 date: "Sep 20, 2024"
 description: "Documenting hidden details."
