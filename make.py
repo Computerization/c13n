@@ -88,16 +88,22 @@ def batch():
     compiled_hsh = {
         int(i[1]): int(i[2]) for i in compiled
 	}
-    os.chdir(tmp_dir)
     for bch_id, bch_start in enumerate(range(0, len(posts), bch_size)):
         if bch_start + bch_size > len(posts): break
         bch_range = list(range(bch_start, bch_start + bch_size))
         hsh = abs(hash(" ".join([posts[i] for i in bch_range])))
         if compiled_hsh[bch_id] == hsh: continue
-        filename = f"Compilation_{bch_id}_{hsh}.tex"
-        # TODO: TeX file concatenation logic
-        # The filenames (dates) can be accessed via `posts[i] for i in bch_range`
-        # The output file should be placed in `mtl_dir` with the filename `filename`
+        filename = f"Compilation_{bch_id}_{hsh}"
+        with open(f"{tmp_dir}/index.tex", "w+", encoding="utf-8") as f:
+            f.write("\\mlytitle{" + f"c13n #{bch_id}" + "}\n")
+            for i in bch_range:
+                with open(f"{src_dir}/{posts[i]}/index.tex", "r", encoding="utf-8") as item:
+                    f.write(item.read())
+                f.write("\n")
+			# TODO: The index.tex file is hereby concatenated.
+            # Current working directory is not changed (still /).
+            # Compile the file and put the PDF file with name as
+            # the variable `filename` under `mtl_dir`.
     os.chdir(cwd)
 
 if len(sys.argv) != 2:
