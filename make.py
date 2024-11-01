@@ -3,10 +3,12 @@ import sys
 import shutil
 
 src_dir = "./src/content/blog/"
-mtl_dir = "./src/content/monthly/"
+mtl_dir = "./src/content/batch/"
 utl_dir = "./typeset/"
 fnt_dir = "./typeset/font/"
 tmp_dir = "./.tmp/"
+
+bch_size = 5
 
 def metaext(src):
     print("  Extracting metadata:")
@@ -79,14 +81,30 @@ def post():
     print("          Cleaning up:")
     os.system("make clean")
 
-def monthly():
-    print("unimplemented")
+def batch():
+    cwd = os.getcwd()
+    posts = sorted(os.listdir(src_dir))
+    compiled = [i.split(".")[0].split("_") for i in sorted(os.listdir(mtl_dir))]
+    compiled_hsh = {
+        int(i[1]): int(i[2]) for i in compiled
+	}
+    os.chdir(tmp_dir)
+    for bch_id, bch_start in enumerate(range(0, len(posts), bch_size)):
+        if bch_start + bch_size > len(posts): break
+        bch_range = list(range(bch_start, bch_start + bch_size))
+        hsh = abs(hash(" ".join([posts[i] for i in bch_range])))
+        if compiled_hsh[bch_id] == hsh: continue
+        filename = f"Compilation_{bch_id}_{hsh}.tex"
+        # TODO: TeX file concatenation logic
+        # The filenames (dates) can be accessed via `posts[i] for i in bch_range`
+        # The output file should be placed in `mtl_dir` with the filename `filename`
+    os.chdir(cwd)
 
 if len(sys.argv) != 2:
     print("make: Incorrect options...")
 elif sys.argv[1] == "post":
     post()
-elif sys.argv[1] == "monthly":
-    monthly()
+elif sys.argv[1] == "batch":
+    batch()
 else:
     print("make: Doing nothing...")
