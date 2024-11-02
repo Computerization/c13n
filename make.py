@@ -122,10 +122,15 @@ def batch():
         # Current range of indices and hash of date strings
         bch_range = list(range(bch_start, bch_start + bch_size))
         hsh = hash_str(" ".join([posts[i] for i in bch_range]))[-6:]
+        existing_hsh = compiled_hsh.get(bch_id)
         # If this batch is already present
-        if compiled_hsh.get(bch_id) == hsh:
-            print(f"   Skipping existing batch #{bch_id} with hash {hsh}")
-            continue
+        if existing_hsh:
+            if existing_hsh == hsh:
+                print(f"   Skipping existing batch #{bch_id} with same hash {hsh}")
+                continue
+            else:
+                print(f"   Removing older version of existing batch #{bch_id} with hash {existing_hsh} (new hash {hsh})")
+                os.remove(f"{bch_dir}compilation_{bch_id}_{existing_hsh}.pdf")
         print(f"   Processing batch #{bch_id} with hash {hsh}")
         filename = f"compilation_{bch_id}_{hsh}"
         os.mkdir(tmp_dir)
