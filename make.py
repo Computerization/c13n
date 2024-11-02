@@ -73,50 +73,71 @@ def pdfgenr(dir):
     shutil.rmtree(tmp_dir)
 
 def post():
+    # Compiles each post, specifically converts the .md file to a .tex file
+    # and compiles the .tex, finally moving .tex and .pdf to the public dir
     cwd = os.getcwd()
     print(f"     Making directory: {cwd}")
     os.chdir(utl_dir)
     os.system("make")
     os.chdir(cwd)
+    # For each of the posts in the source directory
     for post in sorted(os.listdir(src_dir)):
+        # Get hash of the markdown file content
         with open(src_dir + post + "/index.md", "r", encoding="utf-8") as f:
             hsh = hash_str(f.read())
+        # If it is already compiled and the hash matches
         if all([ os.path.exists(pbl_dir + post + p) for p in ["/index.tex", "/index.pdf", "/sha256"] ]):
             with open(pbl_dir + post + "/sha256", "r", encoding="utf-8") as f:
-                if f.read() == hsh: continue
+                if f.read() == hsh:
+                    print(f"      Skipping post: {post}, with hash {hsh}, already compiled")
+                    continue
         print(f"      Processing post: {post}")
-        with open(src_dir + post + "/index.md", "r", encoding="utf-8") as md:
-            with open(pbl_dir + post + "/sha256", "w+", encoding="utf-8") as sha:
-                sha.write(hash_str(md.read()))
+        # Write markdown hash to file `sha256`
+        with open(pbl_dir + post + "/sha256", "w+", encoding="utf-8") as sha:
+            sha.write(hash_str(hsh))
+        # Compile PDF
         pdfgenr(pbl_dir + post)
+    # Cleaning
     os.chdir(utl_dir)
     print("          Cleaning up:")
     os.system("make clean")
 
 def batch():
+    # This function compiles several files sequentially into one batch version
+    # The number of files in each batch are defined in `bch_size`, remaining
+    # files not reaching that number will not be included as a new batch.
     cwd = os.getcwd()
     print(f"     Making directory: {cwd}")
+    # Reading all posts (date strings)
     posts = sorted(os.listdir(src_dir))
+    # Extracting batch ID and hash from preexisting batch directory
     compiled = [i.split(".")[0].split("_") for i in sorted(os.listdir(bch_dir))]
     compiled_hsh = {
         int(i[1]): int(i[2]) for i in compiled
 	}
+    # Generating each batch
     for bch_id, bch_start in enumerate(range(0, len(posts), bch_size)):
+        # For remaining files at the end not reaching the size of a batch
         if bch_start + bch_size > len(posts): break
+        # Current range of indices and hash of date strings
         bch_range = list(range(bch_start, bch_start + bch_size))
         hsh = hash_str(" ".join([posts[i] for i in bch_range]))[-6:]
+        # If this batch is already present
         if compiled_hsh.get(bch_id) == hsh:
             print(f"   Skipping existing batch #{bch_id} with hash {hsh}")
             continue
         print(f"   Processing batch #{bch_id} with hash {hsh}")
         filename = f"compilation_{bch_id}_{hsh}"
         os.mkdir(tmp_dir)
+        # Writing index.tex to be compiled
         with open(f"{tmp_dir}index.tex", "w+", encoding="utf-8") as f:
             f.write("\\mlytitle{" + f"c13n \\#{bch_id}" + "}\n")
             for i in bch_range:
+                # Dump file contents from each post directory
                 with open(f"{src_dir}{posts[i]}/index.tex", "r", encoding="utf-8") as item:
                     f.write(item.read())
                 f.write("\n")
+		# Compiling and cleaning
         texcomp("drvmly.ltx")
         shutil.copy(tmp_dir + "index.pdf", bch_dir + filename.lower() + ".pdf")
         shutil.rmtree(tmp_dir)
