@@ -3,7 +3,7 @@ import sys
 import shutil
 
 src_dir = "./src/content/blog/"
-mtl_dir = "./src/content/batch/"
+bch_dir = "./src/content/batch/"
 utl_dir = "./typeset/"
 fnt_dir = "./typeset/font/"
 tmp_dir = "./.tmp/"
@@ -85,17 +85,19 @@ def batch():
     cwd = os.getcwd()
     print(f"     Making directory: {cwd}")
     posts = sorted(os.listdir(src_dir))
-    compiled = [i.split(".")[0].split("_") for i in sorted(os.listdir(mtl_dir))]
+    compiled = [i.split(".")[0].split("_") for i in sorted(os.listdir(bch_dir))]
     compiled_hsh = {
         int(i[1]): int(i[2]) for i in compiled
 	}
     for bch_id, bch_start in enumerate(range(0, len(posts), bch_size)):
         if bch_start + bch_size > len(posts): break
         bch_range = list(range(bch_start, bch_start + bch_size))
-        hsh = abs(hash(" ".join([posts[i] for i in bch_range])))
-        #if compiled_hsh[bch_id] == hsh: continue
-        print(f"   Processing monthly: {hsh}")
-        filename = f"Compilation_{bch_id}_{hsh}"
+        hsh = hex(hash(" ".join([posts[i] for i in bch_range])))[-6:]
+        if compiled_hsh.get(bch_id) == hsh:
+            print(f"   Skipping existing batch #{bch_id} with hash {hsh}")
+            continue
+        print(f"   Processing batch #{bch_id} with hash {hsh}")
+        filename = f"compilation_{bch_id}_{hsh}"
         os.mkdir(tmp_dir)
         with open(f"{tmp_dir}index.tex", "w+", encoding="utf-8") as f:
             f.write("\\mlytitle{" + f"c13n \\#{bch_id}" + "}\n")
@@ -104,7 +106,7 @@ def batch():
                     f.write(item.read())
                 f.write("\n")
         texcomp("drvmly.ltx")
-        shutil.copy(tmp_dir + "index.pdf", mtl_dir + filename.lower() + ".pdf")
+        shutil.copy(tmp_dir + "index.pdf", bch_dir + filename.lower() + ".pdf")
         shutil.rmtree(tmp_dir)
 
 if len(sys.argv) != 2:
