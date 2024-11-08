@@ -30,6 +30,7 @@
 
 \usepackage{float}
 \usepackage{xurl}
+\usepackage{ragged2e}
 \usepackage{listings}\lstset{basicstyle=\ttfamily,
                              breaklines=true,
                              frame=tlb,
@@ -125,6 +126,7 @@
                 \gdef\date##1{\xdef\DATE{##1}}
                 \gdef\maketitle{\part{\TITLE}}}
 
+\RaggedRight
 \input index.tex
 
 \end{document}

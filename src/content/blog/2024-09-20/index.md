@@ -1,5 +1,5 @@
 ---
-title: "The C13N System Backend Introduction"
+title: "The c13n System Backend Introduction"
 author: "rne"
 date: "Sep 20, 2024"
 description: "Documenting hidden details."
@@ -22,7 +22,7 @@ latex: true
 
 * LuaTeX-ja and evangelion-jfm.
 
-* Macro-package `float`, `xurl`, `listings`, `graphicx`, `lua-ul`, `fontspec`, `micortype` and `hyperref`.
+* Macro-package `float`, `xurl`, `listings`, `graphicx`, `lua-ul`, `fontspec`, `micortype`, `ragged2e`, `hyperref` and `luatexja`.
 
 All of these above are contained in a standard *full* TeXLive (or MacTeX) installation that is released after 2024.
 
@@ -105,9 +105,9 @@ Note: the opening delimiter or closing delimiter cannot be preceded or followed 
 x$a + b = c$ or $a + b = c$y will not be rendered as math (all $ rendered as \$)
 ```
 
-## About the `drv.ltx` style sheet
+## About the `drv[pst|mly].ltx` style sheet
 
-It works only under LuaLaTeX.
+It works only under LuaLaTeX. No plan for porting. The `pst` is for standalone posts while the `mly` is for monthly.
 
 ### Text style
 
@@ -135,7 +135,7 @@ This command is LuaTeX specific.
 \def\inner@makeother#1{\catcode`#112\relax}
 \def\href{\leavevmode\bgroup\let\do\inner@makeother\dospecials\inner@href}
 \begingroup\catcode`[=1\catcode`]=2\catcode`\{=12\catcode`\}=12
- \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>] \inner@ifempty[#2][\url[#1]][#2] \pdfextension endlink \egroup]\endgroup
+ \gdef\inner@href{#1}{#2}[\pdfextension startlink user[/Subtype/Link/A<</Type/Action/S/URI/URI(#1)>>]\inner@ifempty[#2][\url[#1]][#2]\pdfextension endlink \egroup]\endgroup
 ```
 
 Documenting this is unnecessary I think.
@@ -148,6 +148,18 @@ Without utilizing catcode dark magic, `\label` is a really easy one.
  \expandafter\@secondoftwo\fi}\endgroup
 \let\furui@label\label
 \def\label#1{\expnd@ifempty{#1}\relax\furui@label{#1}}
+```
+
+### Headings
+
+To make life easier for injecting metadata from `mdx`, also to enable sandboxed pdf generation for monthly, the `drvmly.ltx` redefines some command.
+
+```TeX
+\def\mlytitle#1{\title{#1}\author{c13n}\date{\today}\maketitle
+                \gdef\title##1{\def\TITLE{##1\rlap{\quad\vtop{\normalsize\hbox{\AUTHOR}\hbox{\DATE}}}}}
+                \gdef\author##1{\xdef\AUTHOR{##1}}
+                \gdef\date##1{\xdef\DATE{##1}}
+                \gdef\maketitle{\part{\TITLE}}}
 ```
 
 ### Blocks
@@ -170,10 +182,41 @@ Another rather simple one is the thematic break `\thematic`.
 
 We currently support 中文 using `luatexja`. To rebuild all posts, you only need a *complete* TeXLive (or MacTeX) installation as the appropriate font is distributed with this repo.
 
+Evangelion-JFM is used as the font metric.
+
+### LuaTeX
+
+To silence the engine when batch compiling, some callback is modified:
+
+```TeX
+\directlua{
+ function be_quiet () end
+ luatexbase.add_to_callback('start_run', be_quiet, 'stop start run')
+ luatexbase.add_to_callback('stop_run', be_quiet, 'stop stop run')
+ luatexbase.add_to_callback('start_page_number', be_quiet, 'stop start page')
+ luatexbase.add_to_callback('stop_page_number', be_quiet, 'stop stop page')
+ luatexbase.add_to_callback('start_file', be_quiet, 'stop start file')
+ luatexbase.add_to_callback('stop_file', be_quiet, 'stop stop file')
+ luatexbase.add_to_callback('show_warning_message', be_quiet, 'stop show warning message')
+}
+```
+
+### LaTeX
+
+To the same reason, LaTeX (especially `listings`) is asked to keep silent:
+
+```TeX
+\RequirePackage[immediate]{silence}
+\WarningsOff
+\ErrorsOff[Listings]
+```
+
 ## The build system `make.py`
 
 It's written in Python, and thus should be portable.
 
 The only thing that should be mentioned about it is that please do not use `webp` as image format.
 
-Use `python make.py post` to make posts (existing posts will not trigger rebuild) and `python make.py monthly` to make all the monthly.
+Use `python make.py post` to make posts (existing posts will not trigger rebuild) and `python make.py batch` to make all the monthly.
+
+For more details, see the comments. This is the only file which is commented carefully.
