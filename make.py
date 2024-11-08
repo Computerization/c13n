@@ -5,7 +5,7 @@ import hashlib
 
 src_dir = "./src/content/blog/"
 pbl_dir = "./public/blog/"
-bch_dir = "./src/content/batch/"
+bch_dir = "./public/batch/"
 utl_dir = "./typeset/"
 fnt_dir = "./typeset/font/"
 tmp_dir = "./.tmp/"
@@ -18,21 +18,17 @@ class File():
 		self.dir = os.path.dirname(self.path)
 		self.filename = os.path.basename(self.path)
 		os.makedirs(self.dir, exist_ok=True)
-	
 	def read(self):
 		with open(self.path, "r", encoding="utf-8") as f:
 			content = f.read()
 		return content
-	
 	def readlines(self):
 		with open(self.path, "r", encoding="utf-8") as f:
 			lines = f.readlines()
 		return lines
-	
 	def write(self, content: str):
 		with open(self.path, "w+", encoding="utf-8") as f:
 			f.write(content)
-	
 	def writelines(self, lines: list):
 		with open(self.path, "w+", encoding="utf-8") as f:
 			f.writelines(lines)
@@ -80,15 +76,15 @@ def texcomp(drv):
 	os.system("lualatex index.ltx --interaction=batchmode")
 	os.chdir(pwd)
 
-def pdfgenr(dir):
-	shutil.copytree(dir, tmp_dir)
+def pdfgenr(post):
+	shutil.copytree(src_dir + post, tmp_dir)
 	metaext(tmp_dir + "index.md")
 	print("           Converting:")
 	os.system(f"{utl_dir}md2tex {tmp_dir}index.md {tmp_dir}index.tex")
 	metainj(tmp_dir + "index.tex")
 	texcomp("drvpst.ltx")
-	shutil.copy(tmp_dir + "index.tex", dir + "/index.tex")
-	shutil.copy(tmp_dir + "index.pdf", dir + "/index.pdf")
+	shutil.copy(tmp_dir + "index.tex", pbl_dir + post + "/index.tex")
+	shutil.copy(tmp_dir + "index.pdf", pbl_dir + post + "/index.pdf")
 	shutil.rmtree(tmp_dir)
 
 def post():
@@ -107,13 +103,13 @@ def post():
 		if all([
 			os.path.exists(pbl_dir + post + p) for p in ["/index.tex", "/index.pdf", "/sha256"]
 		]) and File(pbl_dir + post + "/sha256").read() == hsh:
-			print(f"      Skipping post: {post}, with hash {hsh}, already compiled")
+			print(f"        Skipping post: {post} #{hsh}")
 			continue
 		print(f"      Processing post: {post}")
 		# Write markdown hash to file `sha256`
 		File(pbl_dir + post + "/sha256").write(hsh)
 		# Compile PDF
-		pdfgenr(pbl_dir + post)
+		pdfgenr(post)
 	# Cleaning
 	os.chdir(utl_dir)
 	print("          Cleaning up:")
@@ -130,7 +126,7 @@ def batch():
 	# Extracting batch ID and hash from preexisting batch directory
 	compiled = [i.split(".")[0].split("_") for i in sorted(os.listdir(bch_dir))]
 	compiled_hsh = {
-		int(i[1]): int(i[2]) for i in compiled
+		int(i[1]): i[2] for i in compiled
 	}
 	# Generating each batch
 	for bch_id, bch_start in enumerate(range(0, len(posts), bch_size)):
@@ -143,12 +139,12 @@ def batch():
 		# If this batch is already present
 		if existing_hsh:
 			if existing_hsh == hsh:
-				print(f"   Skipping existing batch #{bch_id} with same hash {hsh}")
+				print(f"       Skipping batch: {bch_id} #{hsh}")
 				continue
 			else:
-				print(f"   Removing older version of existing batch #{bch_id} with hash {existing_hsh} (new hash {hsh})")
+				print(f"    Removing obsolete: {bch_id} #{existing_hsh} -> #{hsh}")
 				os.remove(f"{bch_dir}compilation_{bch_id}_{existing_hsh}.pdf")
-		print(f"   Processing batch #{bch_id} with hash {hsh}")
+		print(f"     Processing batch: {bch_id} #{hsh}")
 		filename = f"compilation_{bch_id}_{hsh}"
 		# Writing index.tex to be compiled
 		File(f"{tmp_dir}index.tex").writelines([
@@ -156,7 +152,7 @@ def batch():
 			"\\mlytitle{" + f"c13n \\#{bch_id}" + "}",
 			*[
 				# Dump file contents from each post directory
-				File(f"{src_dir}{posts[i]}/index.tex").read()
+				File(f"{pbl_dir}{posts[i]}/index.tex").read()
 				for i in bch_range
 			]
 		])
