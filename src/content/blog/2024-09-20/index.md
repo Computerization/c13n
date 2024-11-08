@@ -4,6 +4,7 @@ author: "rne"
 date: "Sep 20, 2024"
 description: "Documenting hidden details."
 latex: true
+pdf: true
 ---
 
 ## External Dependencies
