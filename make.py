@@ -77,7 +77,7 @@ def texcomp(drv):
 	os.chdir(pwd)
 
 def pdfgenr(post):
-	shutil.copytree(src_dir + post, tmp_dir)
+	shutil.copytree(src_dir + post, tmp_dir, dirs_exist_ok=True)
 	metaext(tmp_dir + "index.md")
 	print("           Converting:")
 	os.system(f"{utl_dir}md2tex {tmp_dir}index.md {tmp_dir}index.tex")

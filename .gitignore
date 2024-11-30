@@ -20,3 +20,6 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
+
+# VSCode word count files
+._wordcount_selection.tex
