@@ -13,29 +13,19 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Clang
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang
-
-      - name: Setup TeX Environment
+      - name: Publish
         uses: xu-cheng/texlive-action@v2
         with:
-          scheme: small
+          scheme: basic
           run: |
             tlmgr install \
               collection-luatex \
               evangelion-jfm \
               xurl \
               luatexja
-
-      - name: Publish
-        run: |
-          alias cc=clang
-          source /etc/profile
-          echo $PATH
-          python3 make.py post
-          python3 make.py batch
+            apk add clang
+            python3 make.py post
+            python3 make.py batch
 
       - name: Commit and Push Changes
         run: |
