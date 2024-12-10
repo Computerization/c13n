@@ -24,18 +24,13 @@ jobs:
           scheme: small
           run: |
             tlmgr install \
-              collection-luatex \
-              latex \
+              collection-basic \
+              collection-latex \
               evangelion-jfm \
-              float \
               xurl \
               listings \
               graphics \
               lua-ul \
-              fontspec \
-              microtype \
-              ragged2e \
-              hyperref \
               luatexja
 
       - name: Publish
