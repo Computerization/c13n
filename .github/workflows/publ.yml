@@ -20,9 +20,11 @@ jobs:
           run: |
             tlmgr install \
               collection-luatex \
+              luatexja \
               evangelion-jfm \
               xurl \
-              luatexja
+              silence
+
             apk add clang
             python3 make.py post
             python3 make.py batch
