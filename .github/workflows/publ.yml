@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup TeXLive
+      - name: Compile Inplace
         uses: xu-cheng/texlive-action@v2
         with:
           scheme: small
@@ -24,7 +24,7 @@ jobs:
               float \
               xurl \
               listings \
-              graphicx \
+              graphics \
               lua-ul \
               fontspec \
               microtype \
