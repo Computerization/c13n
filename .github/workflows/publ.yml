@@ -24,7 +24,7 @@ jobs:
           scheme: small
           run: |
             tlmgr install \
-              collection-base \
+              latex-base \
               collection-luatex \
               evangelion-jfm \
               float \
