@@ -24,10 +24,9 @@ jobs:
           scheme: small
           run: |
             tlmgr install \
-              collection-luatex
+              collection-luatex \
               evangelion-jfm \
               xurl \
-              lua-ul \
               luatexja
 
       - name: Publish
