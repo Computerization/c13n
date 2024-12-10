@@ -16,7 +16,7 @@ jobs:
       - name: Publish
         uses: xu-cheng/texlive-action@v2
         with:
-          scheme: basic
+          scheme: small
           run: |
             tlmgr install \
               collection-luatex \
