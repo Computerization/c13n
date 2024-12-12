@@ -23,3 +23,5 @@ pnpm-debug.log*
 
 # VSCode word count files
 ._wordcount_selection.tex
+
+.tmp/
