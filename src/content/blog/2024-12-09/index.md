@@ -7,7 +7,6 @@ latex: true
 pdf: true
 ---
 
-
 ### 引入
 
 > 画龙点睛，事半功倍。
@@ -15,8 +14,6 @@ pdf: true
 差分算法的思想就是通过巧妙的修改差值而不是直接修改原数组，从而优化时间复杂度。利用差分，我们可以在常数时间复杂度内对一个区间进行修改，而不需要遍历整个区间。结合前缀和进行求和，我们可以在 $\mathcal{O}(1)$ 的时间内完成区间修改操作。算法中的这些优化技巧在实际问题中非常高效，尤其是在面对大数据量时。
 
 本篇将介绍如何运用差分优化区间修改操作，并利用前缀和求解区间和。
-
----
 
 ### 差分的思想
 
@@ -37,42 +34,36 @@ $$d_i=a_i-a_{i-1}$$
 
 这样，区间修改的时间复杂度就变为 $\mathcal{O}(1)$。
 
----
-
 ### 算法实现
 
 还是来看一道例题，是洛谷的[P2367](https://www.luogu.com.cn/problem/P2367)
 
 ```cpp
-#include<bits/stdc++.h>
-#define F(_b,_e) for(int i=_b;i<=_e;i++)
+#include <bits/stdc++.h>
+#define F(_b, _e) for (int i = _b; i <= _e; i ++)
 using namespace std;
 
-const int MAXN=5e6+5;
+const int MAXN = 5e6 + 5;
 int a[MAXN];
-int main(){
-	int n, p;
-	n = read();
-	p = read();
+int main() {
+	int n, p; n = read(); p = read();
 	int tmp = 0;
-	F(1,n){
+	F (1, n) {
 		int k = read();
-		a[i] = k-tmp;
+		a[i] = k - tmp;
 		tmp = k;
 	}
-	F(1,p){
-		int l,r,d;
-		l = read();
-		r = read();
-		d = read();
+	F (1, p) {
+		int l, r, d;
+		l = read(); r = read(); d = read();
 		a[l] += d;
-		a[r+1] -= d;
+		a[r + 1] -= d;
 	}
-	tmp=0;
+	tmp = 0;
 	int ans = 5e5;
-	F(1,n){
+	F (1, n) {
 		tmp += a[i];
-		ans = min(ans,tmp);
+		ans = min(ans, tmp);
 	}
 	write(ans);
 	return 0;
