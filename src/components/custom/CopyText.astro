@@ -1,0 +1,16 @@
+---
+const { text } = Astro.props;
+---
+
+<div class="font-base text-sm">
+	<span
+		class="underline hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out cursor-pointer"
+		data-copy-text={text}
+		onclick="
+			navigator.clipboard.writeText(this.getAttribute('data-copy-text'));
+			this.innerText = 'Copied!';
+			setTimeout(() => {this.innerText = 'Copy'}, 1000)
+		">
+		Copy
+	</span>
+</div>
