@@ -7,14 +7,17 @@ jobs:
   write_article:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Install Python libraries
+        run: |
+          pip install openai bs4 requests
       - name: Article creation script
         env:
           DS_APIKEY: ${{ secrets.DS_APIKEY }}
         run: |
           python3 writer.py
-      - name: Commit and Push Changes
+      - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
