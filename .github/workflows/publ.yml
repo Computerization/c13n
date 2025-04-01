@@ -2,8 +2,12 @@ name: Publish Articles
 
 on:
   push:
-    branches:
-      - main
+    paths:
+      - 'src/**'
+      - '**.py'
+      - '**.md'
+      - '**.c'
+      - '**.ltx'
 
 jobs:
   build_latex:
