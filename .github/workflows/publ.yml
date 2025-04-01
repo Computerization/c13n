@@ -1,9 +1,14 @@
 name: Publish Articles
 
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - "article-[0-9]+"
+    paths:
+      - 'src/**'
+      - '**.py'
+      - '**.md'
+      - '**.c'
+      - '**.ltx'
 
 jobs:
   build_latex:
