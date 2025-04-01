@@ -2,8 +2,8 @@ name: Publish Articles
 
 on:
   push:
-    tags:
-      - "article-[0-9]+"
+    branches:
+      - main
 
 jobs:
   build_latex:
