@@ -26,3 +26,6 @@ jobs:
           git add .
           git commit -m "feat(auto): created new article" || echo "no changes to commit"
           git push origin HEAD:main
+  compile:
+    needs: write_article
+    uses: ./.github/workflows/publ.yml
