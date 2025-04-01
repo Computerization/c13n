@@ -10,6 +10,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       - name: Article creation script
+        env:
+          DS_APIKEY: ${{ secrets.DS_APIKEY }}
         run: |
           python3 writer.py
       - name: Commit and Push Changes
