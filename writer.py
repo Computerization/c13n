@@ -17,7 +17,7 @@ else:
 	
 start = time.time()
 print("Connecting to LLM API ...")
-deepseek = OpenAI(base_url="https://api.deepseek.com", api_key=os.environ.get("DS_APIKEY$"))
+deepseek = OpenAI(base_url="https://api.deepseek.com", api_key=os.environ.get("DS_APIKEY"))
 print(f"Initialized LLM API. ({time.time() - start:.1f}s)")
 
 def generate(context, provider, model):
