@@ -2,6 +2,8 @@ name: Generate New Article
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 20 * * *"
 
 jobs:
   write_article:
