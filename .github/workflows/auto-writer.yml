@@ -1,4 +1,4 @@
-name: Publish Articles
+name: Generate New Article
 
 on:
   workflow_dispatch:
