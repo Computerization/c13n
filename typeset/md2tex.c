@@ -49,28 +49,28 @@ static void render_tex_escaped(MD_TEX *r, const MD_CHAR *data, MD_SIZE size) {
         RENDER_VERBATIM(r, "\\^{}");
         break;
       case '#':
-        RENDER_VERBATIM(r, "\\#");
+        RENDER_VERBATIM(r, "\\#{}");
         break;
       case '$':
-        RENDER_VERBATIM(r, "\\$");
+        RENDER_VERBATIM(r, "\\${}");
         break;
       case '%':
-        RENDER_VERBATIM(r, "\\%");
+        RENDER_VERBATIM(r, "\\%{}");
         break;
       case '&':
-        RENDER_VERBATIM(r, "\\&");
+        RENDER_VERBATIM(r, "\\&{}");
         break;
       case '{':
-        RENDER_VERBATIM(r, "\\{");
+        RENDER_VERBATIM(r, "\\{{}");
         break;
       case '}':
-        RENDER_VERBATIM(r, "\\}");
+        RENDER_VERBATIM(r, "\\}{}");
         break;
       case '_':
-        RENDER_VERBATIM(r, "\\_");
+        RENDER_VERBATIM(r, "\\_{}");
         break;
       case '\\':
-        RENDER_VERBATIM(r, "\\textbackslash");
+        RENDER_VERBATIM(r, "\\textbackslash{}");
         break;
       }
       off++;
