@@ -14,7 +14,7 @@ if os.path.exists(path_to):
 else:
 	os.makedirs(path_to, exist_ok=True)
 	print(f"Created directory {path_to}")
-	
+
 start = time.time()
 print("Connecting to LLM API ...")
 deepseek = OpenAI(base_url="https://api.deepseek.com", api_key=os.environ.get("DS_APIKEY"))
@@ -43,7 +43,7 @@ def extract_topic(topics):
 	global deepseek
 	return generate([
 		{"role": "system", "content": "你在为一篇技术博客确定一个主题。直接用中文输出主题。"},
-		{"role": "user", "content": f"阅读以下是 HackerNews 的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n只需要一个主题，直接输出。"},
+		{"role": "user", "content": f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n只需要一个主题，直接输出。"},
 	], deepseek, "deepseek-chat")
 
 def outline(topic):
@@ -55,7 +55,7 @@ def outline(topic):
 def write_from_outline(outline):
 	global deepseek
 	return generate([
-		{"role": "user", "content": f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，避免使用列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用markdown输出，使用latex公式，标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。直接输出正文。"}
+		{"role": "user", "content": f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，避免使用列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\infty$ 1和($\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。直接输出正文。"}
 	], deepseek, "deepseek-reasoner")
 
 def summary(article):
