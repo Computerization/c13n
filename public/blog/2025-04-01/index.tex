@@ -10,10 +10,12 @@ Kahn算法是该问题的经典解法，其伪代码可表示为：\par
 \begin{itemize}
 \item 初始化入度表并构建邻接表
 \item 将入度为0的节点加入队列
-\item 循环处理队列直到为空：
-a. 取出队首节点加入结果集
-b. 将该节点邻居的入度减1
-c. 将新产生的入度0节点加入队列
+\item 循环处理队列直到为空：\begin{itemize}
+\item 取出队首节点加入结果集
+\item 将该节点邻居的入度减1
+\item 将新产生的入度0节点加入队列
+\end{itemize}
+
 \end{itemize}
 \chapter{Zig语言实现拓扑排序}
 \section{数据结构设计}
