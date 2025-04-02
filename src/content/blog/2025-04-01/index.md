@@ -11,7 +11,7 @@ pdf: true
 在系统编程领域，Zig语言凭借其独特的显式内存管理、零成本抽象和强调确定性的设计理念，正在成为构建高性能应用的利器。本文聚焦于拓扑排序算法在Zig语言中的实现，并深入探讨其在并行任务调度中的创新应用。通过将传统的图论算法与现代并发模型相结合，我们能够构建出既保证执行顺序正确性，又充分挖掘硬件并行潜力的任务调度系统。
 
 ## 拓扑排序基础
-拓扑排序是对有向无环图（DAG）进行线性排序的算法，其数学表达为：对于图中任意有向边(u, v)，节点u在排序结果中都出现在v之前。形式化定义为给定图G=(V, E)，求节点排列$L = [v_1, v_2, ..., v_n]$，使得对于每条边$(v_i, v_j) \in E$，都有$i < j$。
+拓扑排序是对有向无环图（DAG）进行线性排序的算法，其数学表达为：对于图中任意有向边 $(u, v)$，节点 $u$ 在排序结果中都出现在 $v$ 之前。形式化定义为给定图 $G=(V, E)$，求节点排列 $L = [v_1, v_2, ..., v_n]$，使得对于每条边 $(v_i, v_j) \in E$，都有 $i < j$。
 
 Kahn算法是该问题的经典解法，其伪代码可表示为：
 1. 初始化入度表并构建邻接表
@@ -70,7 +70,7 @@ fn topologicalSort(g: *Graph) !std.ArrayList(usize) {
     while (queue.items.len > 0) {
         const u = queue.orderedRemove(0);
         try result.append(u);
-        
+
         for (g.nodes.items[u].edges.items) |v| {
             in_degree[v] -= 1;
             if (in_degree[v] == 0) {
@@ -98,7 +98,7 @@ fn parallelExecute(g: *Graph, result: []const usize) void {
 
     const batch_size = 4;
     var pool: [batch_size]std.Thread = undefined;
-    
+
     var current: usize = 0;
     for (&pool) |*t| {
         t.* = std.Thread.spawn(.{}, struct {
@@ -119,7 +119,7 @@ fn parallelExecute(g: *Graph, result: []const usize) void {
     }
 }
 ```
-该实现创建固定数量的工作线程（batch_size），每个线程以跨步方式处理任务。信号量机制保证主线程能够准确等待所有任务完成。这种批量处理方式减少了线程创建开销，同时通过任务分片避免了资源竞争。
+该实现创建固定数量的工作线程（`batch_size`），每个线程以跨步方式处理任务。信号量机制保证主线程能够准确等待所有任务完成。这种批量处理方式减少了线程创建开销，同时通过任务分片避免了资源竞争。
 
 ### 性能优化实践
 在16核服务器上对包含10,000个任务的依赖图进行测试，测得并行版本相比串行执行有显著提升：
@@ -129,8 +129,8 @@ fn parallelExecute(g: *Graph, result: []const usize) void {
 
 ## 进阶话题
 在动态图场景下，传统的静态拓扑排序算法需要改进。我们提出增量维护算法：当新增边(u, v)时，只需沿着v的后续节点传播更新。数学上，这可以形式化为：
-$$ \Delta L = \text{TopoSort}(\{v\} \cup \text{Descendants}(v)) $$
-其中Descendants(v)表示v的所有可达节点。Zig的编译时反射机制可以优化该过程，通过`@TypeOf`和`@hasField`等编译时函数实现依赖关系的静态验证。
+$$\Delta L = \text{TopoSort}(\{v\} \cup \text{Descendants}(v))$$
+其中 $\text{Descendants}(v)$ 表示 $v$ 的所有可达节点。Zig的编译时反射机制可以优化该过程，通过`@TypeOf`和`@hasField`等编译时函数实现依赖关系的静态验证。
 
 ## 总结
 本文展示了Zig语言在实现经典算法和构建并发系统方面的独特优势。通过将显式内存控制与现代化并发原语相结合，开发者能够创建出既保证正确性又具备高性能的任务调度系统。未来随着Zig标准库的进一步完善，其在分布式系统和异构计算领域的应用值得期待。
