@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Python libraries
         run: |
-          pip install openai bs4 requests yaml
+          pip install openai bs4 requests pyyaml
       - name: Article creation script
         env:
           DS_APIKEY: ${{ secrets.DS_APIKEY }}

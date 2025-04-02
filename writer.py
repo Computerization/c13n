@@ -37,7 +37,7 @@ def scrape_website(url, css_selector):
         return elements
     else: return []
 
-# New function to get existing blog posts
+# Get existing blog posts
 def get_existing_blog_posts():
     blog_posts = []
     blog_paths = glob.glob("src/content/blog/*/index.md")
