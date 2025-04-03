@@ -22,7 +22,6 @@ jobs:
 
       - name: Publish
         uses: xu-cheng/texlive-action@v2
-        shell: bash {0}
         with:
           scheme: small
           run: |
@@ -32,7 +31,7 @@ jobs:
               evangelion-jfm \
               xurl \
               silence
-            apk upgrade && apk add gcc
+            apk add gcc || true
             mkdir ./public/batch >/dev/null 2>&1
             python3 make.py post
             python3 make.py batch
