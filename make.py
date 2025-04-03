@@ -8,7 +8,7 @@ pbl_dir = "./public/blog/"
 bch_dir = "./public/batch/"
 utl_dir = "./typeset/"
 fnt_dir = "./typeset/font/"
-sty_dir = "./typeset/macro"
+sty_dir = "./typeset/macro/"
 tmp_dir = "./.tmp/"
 
 bch_size = 5
