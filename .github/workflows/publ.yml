@@ -22,6 +22,7 @@ jobs:
 
       - name: Publish
         uses: xu-cheng/texlive-action@v2
+        shell: bash {0}
         with:
           scheme: small
           run: |
