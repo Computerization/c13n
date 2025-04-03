@@ -23,7 +23,7 @@ jobs:
       - name: Install TeXLive
         run: |
           sudo apt-get update
-          sudo apt install -y texlive-luatex texlive-lang-japanese texlive-latex-recommended
+          sudo apt install -y texlive-luatex
 
       - name: Install C Compiler and Library
         run: |
