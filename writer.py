@@ -91,7 +91,7 @@ def write_from_outline(outline):
 def summary(article):
     global deepseek
     return generate([
-        {"role": "system", "content": "你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。"},
+        {"role": "system", "content": "你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：1) 中文与英文、数字之间需要有空格；2) 中文标点与英文、数字之间不加空格；3) 使用全角中文标点；4) 专有名词大小写正确；5) 英文、数字使用半角字符；6) 使用直角引号「」。"},
         {"role": "user", "content": f"给这篇文章写一个15字的简短介绍：\n\n{article}"}
     ], deepseek, "deepseek-chat")
 
