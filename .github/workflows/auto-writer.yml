@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT }}
       - name: Install Python libraries
         run: |
           pip install openai bs4 requests pyyaml
@@ -22,9 +20,14 @@ jobs:
         run: |
           python3 writer.py
       - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "feat(auto): created new article" || echo "no changes to commit"
           git push origin HEAD:main
+  compile:
+    needs: write_article
+    uses: ./.github/workflows/publ.yml
