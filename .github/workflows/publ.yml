@@ -22,7 +22,7 @@ jobs:
 
       - name: Install TeXLive
         run: |
-          apt-get texlive-luatex texlive-lang-japanese texlive-latex-recommended
+          apt install texlive-luatex texlive-lang-japanese texlive-latex-recommended
 
       - name: Install C Compiler and Library
         run: |
