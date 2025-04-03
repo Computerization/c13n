@@ -49,32 +49,32 @@ graph = {
 \end{lstlisting}
 \section{Kahn 算法实现}
 \begin{lstlisting}[language=python]
-from collections import deque  
+from collections import deque
 
-def topological_sort_kahn(graph, n):  
-    # 初始化入度表  
-    in_degree = {i: 0 for i in range(n)}  
-    for u in graph:  
-        for v in graph[u]:  
-            in_degree[v] += 1  
+def topological_sort_kahn(graph, n):
+    # 初始化入度表
+    in_degree = {i: 0 for i in range(n)}
+    for u in graph:
+        for v in graph[u]:
+            in_degree[v] += 1
 
-    # 将入度为 0 的节点加入队列  
-    queue = deque([u for u in in_degree if in_degree[u] == 0])  
-    result = []  
+    # 将入度为 0 的节点加入队列
+    queue = deque([u for u in in_degree if in_degree[u] == 0])
+    result = []
 
-    while queue:  
-        u = queue.popleft()  
-        result.append(u)  
-        # 更新邻接节点的入度  
-        for v in graph.get(u, []):  
-            in_degree[v] -= 1  
-            if in_degree[v] == 0:  
-                queue.append(v)  
+    while queue:
+        u = queue.popleft()
+        result.append(u)
+        # 更新邻接节点的入度
+        for v in graph.get(u, []):
+            in_degree[v] -= 1
+            if in_degree[v] == 0:
+                queue.append(v)
 
-    # 检查是否存在环  
-    if len(result) != n:  
-        return []  # 存在环  
-    return result  
+    # 检查是否存在环
+    if len(result) != n:
+        return []  # 存在环
+    return result
 \end{lstlisting}
 \textbf{代码解读}：\par
 \begin{enumerate}
@@ -85,25 +85,25 @@ def topological_sort_kahn(graph, n):
 \end{enumerate}
 \section{DFS 算法实现}
 \begin{lstlisting}[language=python]
-def topological_sort_dfs(graph):  
-    visited = set()  
-    stack = []  
+def topological_sort_dfs(graph):
+    visited = set()
+    stack = []
 
-    def dfs(u):  
-        if u in visited:  
-            return  
-        visited.add(u)  
-        # 递归访问所有邻接节点  
-        for v in graph.get(u, []):  
-            dfs(v)  
-        # 递归结束后压入栈  
-        stack.append(u)  
+    def dfs(u):
+        if u in visited:
+            return
+        visited.add(u)
+        # 递归访问所有邻接节点
+        for v in graph.get(u, []):
+            dfs(v)
+        # 递归结束后压入栈
+        stack.append(u)
 
-    for u in graph:  
-        if u not in visited:  
-            dfs(u)  
-    # 逆序输出栈  
-    return stack[::-1]  
+    for u in graph:
+        if u not in visited:
+            dfs(u)
+    # 逆序输出栈
+    return stack[::-1]
 \end{lstlisting}
 \textbf{代码解读}：\par
 \begin{enumerate}
@@ -114,11 +114,12 @@ def topological_sort_dfs(graph):
 \chapter{实例演示与测试}
 假设有以下 DAG：\par
 \begin{lstlisting}
-5 → 0 ← 4  
-↓   ↓   ↓  
-2 → 3 → 1  
+5 → 0 ← 4
+↓   ↓   ↓
+2 → 3 → 1
 \end{lstlisting}
-\textbf{手动推导}：可能的拓扑排序为 \verb![5, 4, 2, 0, 3, 1]!。\par\textbf{代码测试}：\par
+\textbf{手动推导}：可能的拓扑排序为 \verb![5, 4, 2, 0, 3, 1]!。
+\textbf{代码测试}：\par
 \begin{enumerate}
 \item 输入图的邻接表表示：
 \end{enumerate}
@@ -131,14 +132,15 @@ graph = {
     3: [1],
     1: []
 }
-n = 6  
+n = 6
 \end{lstlisting}
 \begin{enumerate}
 \item 运行 \verb!topological_sort_kahn(graph, 6)! 应返回长度为 6 的合法排序。
 \item 若图中存在环（例如添加边 \verb!1 → 5!），两种算法均返回空列表。
 \end{enumerate}
 \chapter{复杂度与优化}
-两种算法的时间复杂度均为 $O(V + E)$，空间复杂度为 $O(V)$。\par\textbf{优化技巧}：若需要字典序最小的排序，可将 Kahn 算法中的队列替换为优先队列（最小堆）。\par
+两种算法的时间复杂度均为 $O(V + E)$，空间复杂度为 $O(V)$。
+\textbf{优化技巧}：若需要字典序最小的排序，可将 Kahn 算法中的队列替换为优先队列（最小堆）。\par
 \chapter{实际应用场景}
 \begin{itemize}
 \item \textbf{编译器构建}：确定源代码文件的编译顺序。
@@ -155,5 +157,5 @@ n = 6
 \chapter{参考资源}
 \begin{enumerate}
 \item 《算法导论》第 22.4 章「拓扑排序」。
-\item VisuAlgo 的可视化工具：https://visualgo.net/zh/graphds。
+\item VisuAlgo 的可视化工具：https://visualgo.net/zh/graphds
 \end{enumerate}
