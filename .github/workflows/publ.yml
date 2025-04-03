@@ -16,27 +16,25 @@ jobs:
   build_latex:
     runs-on: ubuntu-latest
 
-    continue-on-error: true
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Publish
-        uses: xu-cheng/texlive-action@v2
-        with:
-          scheme: small
-          run: |
-            tlmgr install \
-              collection-luatex \
-              luatexja \
-              evangelion-jfm \
-              xurl \
-              silence
-            apk add gcc
-            mkdir ./public/batch >/dev/null 2>&1
-            python3 make.py post
-            python3 make.py batch
+      - name: Install TeXLive
+        run: |
+          apt-get texlive-luatex texlive-lang-japanese texlive-latex-recommended
+
+      - name: Install C Compiler and Library
+        run: |
+          cc -v
+
+      - name: Make Post
+        run: python3 make.py post
+
+      - name: Make Batch
+        run: |
+          mkdir ./public/batch >/dev/null 2>&1
+          python3 make.py batch
 
       - name: Commit and Push Changes
         env:
