@@ -2,7 +2,7 @@
 title: "用 Mermaid.js 提升技术文档的可视化能力：流程图与架构图实战指南"
 author: "杨其臻"
 date: "Apr 03, 2025"
-description: "「用 Mermaid.js 绘制技术流程图与架构图实战指南」"
+description: "用 Mermaid.js 绘制技术流程图与架构图实战指南"
 latex: true
 pdf: true
 ---
