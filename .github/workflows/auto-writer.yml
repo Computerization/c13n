@@ -33,4 +33,4 @@ jobs:
 
   compile:
     needs: write_article
-    uses: ./.github/workflows/publ.yml
+    uses: ./.github/workflows/auto-publisher.yml
