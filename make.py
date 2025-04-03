@@ -8,6 +8,7 @@ pbl_dir = "./public/blog/"
 bch_dir = "./public/batch/"
 utl_dir = "./typeset/"
 fnt_dir = "./typeset/font/"
+sty_dir = "./typeset/macro"
 tmp_dir = "./.tmp/"
 
 bch_size = 5
@@ -71,6 +72,8 @@ def texcomp(drv):
 	shutil.copy(utl_dir + drv, tmp_dir + "index.ltx")
 	for fonts in os.listdir(fnt_dir):
 		shutil.copy(fnt_dir + fonts, tmp_dir + fonts)
+	for macro in os.listdir(sty_dir):
+		shutil.copy(sty_dir + macro, tmp_dir + macro)
 	pwd = os.getcwd()
 	os.chdir(tmp_dir)
 	os.system("lualatex index.ltx --interaction=batchmode")
