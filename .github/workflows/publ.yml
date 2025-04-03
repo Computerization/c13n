@@ -33,7 +33,7 @@ jobs:
 
       - name: Make Batch
         run: |
-          mkdir ./public/batch >/dev/null 2>&1
+          mkdir -p ./public/batch
           python3 make.py batch
 
       - name: Commit and Push Changes
