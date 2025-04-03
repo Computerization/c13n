@@ -23,11 +23,10 @@ jobs:
       - name: Install TeXLive
         run: |
           sudo apt-get update
-          sudo apt install -y texlive-luatex
+          sudo apt install -y texlive-luatex texlive-latex-base texlive-lang-japanese
 
       - name: Install C Compiler and Library
-        run: |
-          cc -v
+        run: cc -v
 
       - name: Make Post
         run: python3 make.py post
