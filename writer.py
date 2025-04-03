@@ -11,16 +11,16 @@ import yaml
 path_to = f'src/content/blog/{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
 if os.path.exists(path_to):
-    print("Article already generated today.")
+    print(f"   Skipping directory: {path_to}")
     exit(0)
 else:
     os.makedirs(path_to, exist_ok=True)
-    print(f"Created directory {path_to}")
+    print(f"     Making directory: {path_to}")
 
 start = time.time()
-print("Connecting to LLM API ...")
+print("    Connecting remote:")
 deepseek = OpenAI(base_url="https://api.deepseek.com", api_key=os.environ.get("DS_APIKEY"))
-print(f"Initialized LLM API. ({time.time() - start:.1f}s)")
+print(f"   Time spent on init: {time.time() - start:.1f} s")
 
 def generate(context, provider, model):
     completion = provider.chat.completions.create(
@@ -41,7 +41,7 @@ def scrape_website(url, css_selector):
 def get_existing_blog_posts():
     blog_posts = []
     blog_paths = glob.glob("src/content/blog/*/index.md")
-    
+
     for path in blog_paths:
         try:
             with open(path, 'r', encoding='utf-8') as f:
@@ -55,18 +55,18 @@ def get_existing_blog_posts():
                         'description': metadata.get('description', '')
                     })
         except Exception as e:
-            print(f"Error reading {path}: {e}")
-    
+            print(f"        Error reading: {path}; {e}")
+
     return blog_posts
 
 # Get existing blog posts
 existing_posts = get_existing_blog_posts()
 existing_posts_text = "\n".join([post["title"] for post in existing_posts])
-print(f"Loaded {len(existing_posts)} existing blog posts.")
+print(f"              Loading: {len(existing_posts)} existing blog posts")
 
 topics = [topic.get_text(strip=True) for topic in scrape_website("https://news.ycombinator.com/", ".titleline")]
 topics_text = "\n".join(random.choices(topics, k=random.randint(5, len(topics))))
-print(f"Scraped {len(topics)} topics from Hacker News.")
+print(f"              Scraped: {len(topics)} topics")
 
 def extract_topic(topics):
     global deepseek, existing_posts_text
@@ -96,33 +96,33 @@ def summary(article):
     ], deepseek, "deepseek-chat")
 
 start = time.time()
-print("Generating topic ...")
+print("     Generating topic:")
 topic = extract_topic(topics_text)
-print(f"Determined topic ({time.time() - start:.1f}s): {topic}")
+print(f"     Determined topic: {topic}; time spent {time.time() - start:.1f} s")
 
 start = time.time()
-print("Generating outline ...")
+print("   Generating outline:")
 outline_result = outline(topic)
-print(f"Outline generated ({time.time() - start:.1f}s).")
+print(f"   Determined outline: time spent {time.time() - start:.1f} s")
 
 start = time.time()
-print("Generating article ...")
+print("   Generating article:")
 article = write_from_outline(outline_result)
-print(f"Article generated ({time.time() - start:.1f}s).")
+print(f"      Article written: time spent {time.time() - start:.1f} s")
 
 start = time.time()
-print("Generating summary ...")
+print("   Generating summary:")
 summary_result = summary(article)
-print(f"Summary ({time.time() - start:.1f}s): {summary_result}")
+print(f"      Decided Summary: {summary_result}; time spent {time.time() - start:.1f} s")
 
 lines = iter(article.split("\n"))
 markdown_file = ""
 author = random.choice(["杨其臻", "杨子凡", "叶家炜", "黄京"])
+print(f"       Rolled author: {author}")
 
 for line in lines:
     if line.startswith("# "):
         title = line[1:].strip()
-        print(f"Detected title: {title}")
 
         metadata = "\n".join([
             "---",
@@ -134,7 +134,6 @@ for line in lines:
             f'pdf: true',
             "---",
         ]) + "\n"
-        print(f"Injecting metadata:\n{metadata.strip()}")
 
         markdown_file += metadata
         break
@@ -146,4 +145,4 @@ for line in lines:
 with open(f"{path_to}/index.md", "w", encoding="utf-8") as f:
     f.write(markdown_file)
 
-print(f"Markdown file generated at {path_to}/index.md")
+print(f"     Composed article: {path_to}/index.md")
