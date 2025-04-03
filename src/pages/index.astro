@@ -7,67 +7,71 @@ import Link from "@components/Link.astro";
 import { SITE, HOME } from "@consts";
 
 const blog = (await getCollection("blog"))
-  .filter(post => !post.data.draft)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0,SITE.NUM_POSTS_ON_HOMEPAGE);
-
+    .filter((post) => !post.data.draft)
+    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+    .slice(0, SITE.NUM_POSTS_ON_HOMEPAGE);
 ---
 
 <PageLayout title={HOME.TITLE} description={HOME.DESCRIPTION}>
-  <Container>
-    <h4 class="animate font-semibold text-black dark:text-white">
-      Welcome to <code>`c13n`</code>, the Newsletter of Computerization <span class="text-xl">👋🏻</span>
-    </h4>
-    <div class="space-y-16">
-      <section>
-        <article class="space-y-4">
-          <p class="animate">
-            We are a passionate high school student club dedicated to
-            advancing informatization systems at the Shanghai World Foreign Language Academy.
-          </p>
-          <p class="animate">
-            Explore <code>c13n</code>, your go-to resource for regularly updated articles, tutorials,
-            and insights on computer science and technology.
-          </p>
-          <p class="animate">
-            All of our work and source code are available on
-            <Link href="https://github.com/Computerization/" aria-label="Computerization on GitHub" external>
-              GitHub
-            </Link>.
-          </p>
-        </article>
+    <Container>
+        <h4 class="animate font-semibold text-black dark:text-white">
+            Welcome to <code>`c13n`</code>, the Newsletter of Computerization <span
+                class="text-xl">👋🏻</span
+            >
+        </h4>
+        <div class="space-y-16">
+            <section>
+                <article class="space-y-4">
+                    <p class="animate">
+                        We are a passionate high school student club dedicated
+                        to advancing informatization systems at the Shanghai
+                        World Foreign Language Academy.
+                    </p>
+                    <p class="animate">
+                        This is our student-run newsletter featuring regular
+                        articles, tutorials, and insights on programming,
+                        algorithms, and computing technologies we're passionate
+                        about.
+                    </p>
+                    <p class="animate">
+                        All of our work and source code are available on
+                        <code>github.com/Computerization</code>.
+                    </p>
+                </article>
+            </section>
 
-      </section>
+            <section class="animate space-y-6">
+                <div
+                    class="flex flex-wrap gap-y-2 items-center justify-between"
+                >
+                    <h5 class="font-semibold text-black dark:text-white">
+                        Latest posts
+                    </h5>
+                    <Link href="/blog"> See all posts </Link>
+                </div>
+                <ul class="flex flex-col gap-4">
+                    {
+                        blog.map((post) => (
+                            <li>
+                                <ArrowCard entry={post} />
+                            </li>
+                        ))
+                    }
+                </ul>
+            </section>
 
-      <section class="animate space-y-6">
-        <div class="flex flex-wrap gap-y-2 items-center justify-between">
-          <h5 class="font-semibold text-black dark:text-white">
-            Latest posts
-          </h5>
-          <Link href="/blog">
-            See all posts
-          </Link>
+            <section class="animate space-y-4">
+                <h5 class="font-semibold text-black dark:text-white">
+                    License
+                </h5>
+                <article>
+                    <p>
+                        The text is available under the Creative Commons
+                        Attribution License 4.0, with additional terms that may
+                        apply; source code is available under the MIT License.
+                    </p>
+                </article>
+            </section>
         </div>
-        <ul class="flex flex-col gap-4">
-          {blog.map(post => (
-            <li>
-              <ArrowCard entry={post} />
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section class="animate space-y-4">
-        <h5 class="font-semibold text-black dark:text-white">
-          License
-        </h5>
-        <article>
-          <p>
-            The text is available under the Creative Commons Attribution License 4.0,
-            with additional terms that may apply; source code is available under the MIT License.
-          </p>
-        </article>
-      </section>
-    </div>
-  </Container>
+    </Container>
 </PageLayout>
