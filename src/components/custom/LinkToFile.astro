@@ -3,26 +3,35 @@ type Props = {
     slug: string;
     latex?: boolean;
     pdf?: boolean;
-}
+};
 
 const { slug, latex, pdf } = Astro.props;
 const path = `/blog/${slug}`;
 ---
-{(latex || pdf) && (
-<div class="font-base text-sm">
-    &bull; Available in
-    {latex && (
-            <>
-                <a href={`${path}/index.tex`} class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
-                    <span class="underline">LaTeX</span>
+
+{
+    (latex || pdf) && (
+        <div class="font-base text-sm">
+            Available in
+            {latex && (
+                <>
+                    <a
+                        href={`${path}/index.tex`}
+                        class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out"
+                    >
+                        <span class="underline">LaTeX</span>
+                    </a>
+                    {pdf && " and "}
+                </>
+            )}
+            {pdf && (
+                <a
+                    href={`${path}/index.pdf`}
+                    class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out"
+                >
+                    <span class="underline">PDF</span>
                 </a>
-                {pdf && " and "}
-            </>
-    )}
-    {pdf && (
-            <a href={`${path}/index.pdf`} class="hover:text-black dark:hover:text-white transition-colors duration-300 ease-in-out">
-                <span class="underline">PDF</span>
-            </a>
-    )}
-</div>
-    )}
+            )}
+        </div>
+    )
+}
