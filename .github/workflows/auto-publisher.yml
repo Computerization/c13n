@@ -1,4 +1,4 @@
-name: Publish Articles
+name: Publish New Article
 
 on:
   workflow_dispatch:
@@ -10,28 +10,27 @@ on:
       - '**.md'
       - '**.c'
       - '**.ltx'
-      - 'publ.yml'
 
 jobs:
-  build_latex:
+  publish_article:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install TeXLive
+      - name: Setup TeX Environment
         run: |
           sudo apt-get update
           sudo apt install -y texlive-luatex texlive-latex-base texlive-lang-cjk
 
-      - name: Install C Compiler and Library
+      - name: Verify C Support
         run: cc -v
 
-      - name: Make Post
+      - name: Publish Individual Post
         run: python3 make.py post
 
-      - name: Make Batch
+      - name: Publish Batch Monthly
         run: |
           mkdir -p ./public/batch
           python3 make.py batch
