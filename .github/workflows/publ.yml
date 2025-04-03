@@ -10,6 +10,7 @@ on:
       - '**.md'
       - '**.c'
       - '**.ltx'
+      - 'publ.yml'
 
 jobs:
   build_latex:
