@@ -30,7 +30,7 @@ jobs:
               evangelion-jfm \
               xurl \
               silence
-            apk add clang
+            apk add clang || apk add gcc
             mkdir ./public/batch >/dev/null 2>&1
             python3 make.py post
             python3 make.py batch
