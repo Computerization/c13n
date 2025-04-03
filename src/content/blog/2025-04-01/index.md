@@ -2,7 +2,7 @@
 title: "Zig 语言中的拓扑排序及其在并行处理中的应用"
 author: "杨其臻"
 date: "Apr 01, 2025"
-description: "本文介绍 Zig 语言实现拓扑排序及其在并行任务调度中的应用。"
+description: "本文介绍 Zig 语言实现拓扑排序及其在并行任务调度中的应用"
 latex: true
 pdf: true
 ---
