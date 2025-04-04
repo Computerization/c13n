@@ -2,7 +2,7 @@
 title: "JavaScript 中的事件循环机制：从原理到实践"
 author: "叶家炜"
 date: "Apr 04, 2025"
-description: "深入解析 JavaScript 事件循环机制与异步编程实践。"
+description: "深入解析 JavaScript 事件循环机制与异步编程实践"
 latex: true
 pdf: true
 ---
