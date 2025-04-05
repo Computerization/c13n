@@ -1,6 +1,6 @@
 ---
 title: "The c13n System Backend Introduction"
-author: "rne"
+author: "黄京"
 date: "Sep 20, 2024"
 description: "Documenting hidden details."
 latex: true
