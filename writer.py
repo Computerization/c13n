@@ -139,7 +139,8 @@ for line in lines:
         break
 
 for line in lines:
-    if line.startswith("---"): continue
+    if line.startswith("---") \
+        or (line.startswith("#") and any([wd in line for wd in ["引言", "总结", "结语"]])): continue
     markdown_file += line + "\n"
 
 with open(f"{path_to}/index.md", "w", encoding="utf-8") as f:
