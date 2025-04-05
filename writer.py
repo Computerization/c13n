@@ -122,7 +122,7 @@ print(f"        Rolled author: {author}")
 
 for line in lines:
     if line.startswith("# "):
-        title = line[1:].strip()
+        title = line[1:].strip().split("：")[0]
 
         metadata = "\n".join([
             "---",
