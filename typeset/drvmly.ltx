@@ -27,7 +27,8 @@
 \let\section\subsection
 \let\subsection\subsubsection
 \let\subsubsection\paragraph
-\renewcommand{\thechapter}{\relax} % relax!!
+% \renewcommand{\thechapter}{\relax} % relax!!
+\def\thechapter#1{\relax} % gobble the period, fragile
 
 \usepackage{float}
 \usepackage{xurl}
