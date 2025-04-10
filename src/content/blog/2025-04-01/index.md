@@ -1,8 +1,8 @@
 ---
-title: "Zig 语言中的拓扑排序及其在并行处理中的应用"
-author: "杨其臻"
+title: "Zig 语言中的拓扑排序及其在并行处理中的应用 "
+author: " 杨其臻 "
 date: "Apr 01, 2025"
-description: "本文介绍 Zig 语言实现拓扑排序及其在并行任务调度中的应用"
+description: " 本文介绍 Zig 语言实现拓扑排序及其在并行任务调度中的应用 "
 latex: true
 pdf: true
 ---
@@ -127,7 +127,7 @@ fn parallelExecute(g: *Graph, result: []const usize) void {
 关键优化点包括采用无锁环形缓冲区作为任务队列、根据 CPU 缓存行大小（通常 64 字节）进行数据对齐来避免伪共享等问题。
 
 ## 进阶话题
-在动态图场景下，传统的静态拓扑排序算法需要改进。我们提出增量维护算法：当新增边 $(u, v)$ 时，只需沿着v的后续节点传播更新。数学上，这可以形式化为：
+在动态图场景下，传统的静态拓扑排序算法需要改进。我们提出增量维护算法：当新增边 $(u, v)$ 时，只需沿着 v 的后续节点传播更新。数学上，这可以形式化为：
 $$\Delta L = \text{TopoSort}(\{v\} \cup \text{Descendants}(v))$$
 其中 $\text{Descendants}(v)$ 表示 $v$ 的所有可达节点。Zig 的编译时反射机制可以优化该过程，通过 `@TypeOf` 和 `@hasField` 等编译时函数实现依赖关系的静态验证。
 

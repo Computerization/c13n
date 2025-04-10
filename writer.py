@@ -84,35 +84,49 @@ def outline(topic):
 def write_from_outline(outline):
     global deepseek, existing_posts_text
     return generate([
-        {"role": "system", "content": "你是一位专业技术博客作者。在写作时请遵循以下中文排版规范：1) 中文与英文、数字之间需要有空格；2) 中文标点与英文、数字之间不加空格；3) 使用全角中文标点；4) 专有名词大小写正确；5) 英文、数字使用半角字符；6) 使用直角引号「」。"},
-        {"role": "user", "content": f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，避免使用列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\\infty$ 1和($\\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。请遵循中文排版规范，确保中英文之间有空格，使用正确的标点符号。直接输出正文。"}
+        {"role": "system", "content": "你是一位专业技术博客作者。在写作时请遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符；使用直角引号「」。"},
+        {"role": "user", "content": f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，不能使用任何列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\\infty$ 1和($\\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。请遵循中文排版规范，使用正确的标点符号。直接输出正文。"}
     ], deepseek, "deepseek-reasoner")
 
 def summary(article):
     global deepseek
     return generate([
-        {"role": "system", "content": "你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：1) 中文与英文、数字之间需要有空格；2) 中文标点与英文、数字之间不加空格；3) 使用全角中文标点；4) 专有名词大小写正确；5) 英文、数字使用半角字符。注意简介被作为副标题使用，不是一句句子，不要以句号结尾。"},
+        {"role": "system", "content": "你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符。注意简介被作为副标题使用，不是一句句子，不要以句号结尾。"},
         {"role": "user", "content": f"给这篇文章写一个15字的简短介绍：\n\n{article}"}
     ], deepseek, "deepseek-chat")
 
+is_latin = lambda ch: '\u0000' <= ch <= '\u007F' or '\u00A0' <= ch <= '\u024F'
+is_nonspace_latin = lambda ch: is_latin(ch) and not ch.isspace() and not ch in "*()[]\{\}"
+is_nonpunct_cjk = lambda ch: not is_latin(ch) and ch not in "·！￥…（）—【】、；：‘’“”，。《》？「」"
+
+def beautify_string(text):
+    res = ""
+    for idx in range(len(text)):
+        if idx and (
+            (is_nonspace_latin(text[idx])     and is_nonpunct_cjk(text[idx - 1])) or
+            (is_nonspace_latin(text[idx - 1]) and is_nonpunct_cjk(text[idx]))
+        ): res += " "
+        res += text[idx]
+    return res
+
 start = time.time()
 print("     Generating topic:")
-topic = extract_topic(topics_text)
+topic = beautify_string(extract_topic(topics_text))
 print(f"     Determined topic: {topic}; time spent {time.time() - start:.1f} s")
 
 start = time.time()
 print("   Generating outline:")
-outline_result = outline(topic)
+outline_result = beautify_string(outline(topic))
 print(f"   Determined outline: time spent {time.time() - start:.1f} s")
 
 start = time.time()
 print("   Generating article:")
-article = write_from_outline(outline_result)
+article = beautify_string(write_from_outline(outline_result))
 print(f"      Article written: time spent {time.time() - start:.1f} s")
 
 start = time.time()
 print("   Generating summary:")
-summary_result = summary(article)
+summary_result = beautify_string(summary(article))
 print(f"      Decided Summary: {summary_result}; time spent {time.time() - start:.1f} s")
 
 lines = iter(article.split("\n"))

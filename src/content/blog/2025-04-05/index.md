@@ -1,8 +1,8 @@
 ---
-title: "Python 生成器原理与应用深度解析"
-author: "黄京"
+title: "Python 生成器原理与应用深度解析 "
+author: " 黄京 "
 date: "Apr 05, 2025"
-description: "深入解析 Python 生成器原理与高效应用"
+description: " 深入解析 Python 生成器原理与高效应用 "
 latex: true
 pdf: true
 ---

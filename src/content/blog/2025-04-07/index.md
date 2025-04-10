@@ -1,8 +1,8 @@
 ---
-title: "使用 IndexedDB 进行浏览器端数据存储的最佳实践"
-author: "杨子凡"
+title: " 使用 IndexedDB 进行浏览器端数据存储的最佳实践 "
+author: " 杨子凡 "
 date: "Apr 07, 2025"
-description: "IndexedDB 浏览器端数据存储实践指南"
+description: "IndexedDB 浏览器端数据存储实践指南 "
 latex: true
 pdf: true
 ---

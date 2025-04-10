@@ -1,8 +1,8 @@
 ---
-title: "理解并实现基本的拓扑排序算法"
-author: "杨其臻"
+title: " 理解并实现基本的拓扑排序算法 "
+author: " 杨其臻 "
 date: "Apr 02, 2025"
-description: "介绍拓扑排序原理与 Python 实现方法"
+description: " 介绍拓扑排序原理与 Python 实现方法 "
 latex: true
 pdf: true
 ---

@@ -1,8 +1,8 @@
 ---
-title: "Rust 中的安全与不安全代码边界实践"
-author: "叶家炜"
+title: "Rust 中的安全与不安全代码边界实践 "
+author: " 叶家炜 "
 date: "Apr 06, 2025"
-description: "Rust 安全与不安全代码边界实践指南"
+description: "Rust 安全与不安全代码边界实践指南 "
 latex: true
 pdf: true
 ---
