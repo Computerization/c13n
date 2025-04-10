@@ -1,8 +1,8 @@
 ---
-title: " 使用 PipeWire 优化 Linux 音频系统的配置与实践 "
-author: " 黄京 "
+title: "使用 PipeWire 优化 Linux 音频系统的配置与实践"
+author: "黄京"
 date: "Apr 09, 2025"
-description: "PipeWire 优化 Linux 音频系统的配置与实践 "
+description: "PipeWire 优化 Linux 音频系统的配置与实践"
 latex: true
 pdf: true
 ---
@@ -41,7 +41,7 @@ systemctl --user enable --now pipewire pipewire-pulse
 此过程关键步骤在于**禁用 PulseAudio 服务**，避免资源竞争。安装后需验证音频服务状态：
 
 ```bash
-pw-top | grep "Driver Rate Quantum"
+pw-top | grep"Driver Rate Quantum"
 # 预期输出示例：48000 Hz | 256 samples (5.33 ms)
 ```
 
@@ -115,10 +115,10 @@ WirePlumber 作为会话管理器，支持 Lua 脚本实现自动化策略。例
 ```lua
 rule = {
     matches = {
-        { { "device.name", "equals", "bluez_card.XX_XX_XX_XX_XX_XX" } }
+        { {"device.name","equals","bluez_card.XX_XX_XX_XX_XX_XX"} }
     },
     apply_properties = {
-        ["device.profile"] = "a2dp-sink-ldac"
+        ["device.profile"] ="a2dp-sink-ldac"
     }
 }
 table.insert(alsa_monitor.rules, rule)
@@ -131,7 +131,7 @@ table.insert(alsa_monitor.rules, rule)
 在**游戏音频优化**场景中，可通过环境变量动态调整量子值：
 
 ```bash
-env PIPEWIRE_LATENCY="64/48000" %command%
+env PIPEWIRE_LATENCY="64/48000"%command%
 ```
 
 该命令将量子锁定为 64 样本，应用于 Steam 启动参数时可显著降低《CS2》等游戏的输入到输出延迟。同时配合 `easyeffects` 加载预置均衡器，可增强脚步声等关键音效。
@@ -142,13 +142,13 @@ env PIPEWIRE_LATENCY="64/48000" %command%
 
 1. 检查 WirePlumber 设备状态：
    ```bash
-   wpctl status | grep -A 10 "Audio"
+   wpctl status | grep -A 10"Audio"
    # 确认目标设备处于 available 状态
    ```
 
 2. 验证节点连接：
    ```bash
-   pw-dump | jq '.[] | select(.type == "PipeWire:Interface:Node")'
+   pw-dump | jq '.[] | select(.type =="PipeWire:Interface:Node")'
    # 检查 input/output 端口是否建立链接
    ```
 

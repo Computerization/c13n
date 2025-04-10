@@ -1,8 +1,8 @@
 ---
-title: "Python 生成器原理与应用深度解析 "
-author: " 黄京 "
+title: "Python 生成器原理与应用深度解析"
+author: "黄京"
 date: "Apr 05, 2025"
-description: " 深入解析 Python 生成器原理与高效应用 "
+description: "深入解析 Python 生成器原理与高效应用"
 latex: true
 pdf: true
 ---
@@ -123,7 +123,7 @@ def coroutine():
 
 co = coroutine()
 next(co)  # 启动生成器
-co.send("Hello")  # 输出 "Received: Hello"
+co.send("Hello")  # 输出"Received: Hello"
 ```
 
 这种机制在异步编程中被广泛应用，直到 Python 3.5 引入 `async/await` 语法后，生成器协程逐渐被原生协程替代，但其设计思想仍值得研究。

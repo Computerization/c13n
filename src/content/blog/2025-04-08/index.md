@@ -1,8 +1,8 @@
 ---
-title: " 使用 HNSW 算法优化向量相似性搜索 "
-author: " 叶家炜 "
+title: "使用 HNSW 算法优化向量相似性搜索"
+author: "叶家炜"
 date: "Apr 08, 2025"
-description: " 探索 HNSW 算法优化向量搜索的原理与实践 "
+description: "探索 HNSW 算法优化向量搜索的原理与实践"
 latex: true
 pdf: true
 ---

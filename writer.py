@@ -96,7 +96,7 @@ def summary(article):
     ], deepseek, "deepseek-chat")
 
 is_latin = lambda ch: '\u0000' <= ch <= '\u007F' or '\u00A0' <= ch <= '\u024F'
-is_nonspace_latin = lambda ch: is_latin(ch) and not ch.isspace() and not ch in "*()[]\{\}"
+is_nonspace_latin = lambda ch: is_latin(ch) and not ch.isspace() and not ch in """*()[]{}"'/-@#"""
 is_nonpunct_cjk = lambda ch: not is_latin(ch) and ch not in "·！￥…（）—【】、；：‘’“”，。《》？「」"
 
 def beautify_string(text):
