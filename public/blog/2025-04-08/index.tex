@@ -1,5 +1,5 @@
-\title{" 使用 HNSW 算法优化向量相似性搜索 "}
-\author{" 叶家炜 "}
+\title{"使用 HNSW 算法优化向量相似性搜索"}
+\author{"叶家炜"}
 \date{"Apr 08, 2025"}
 \maketitle
 在大数据时代，向量相似性搜索已成为推荐系统、图像检索和自然语言处理等场景的核心技术。传统方法如暴力搜索（Brute-force）虽能保证 100\%{} 召回率，但其 $O(N)$ 的时间复杂度难以应对百万级以上数据规模；KD-Tree 和 LSH（Locality-Sensitive Hashing）虽提升了效率，却在高维空间中面临「维度灾难」的挑战。而 \textbf{HNSW（Hierarchical Navigable Small World）} 算法通过分层可导航小世界网络结构，在精度与效率之间实现了突破性平衡，成为当前近似最近邻搜索（ANN）领域的热门选择。\par

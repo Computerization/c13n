@@ -1,5 +1,5 @@
-\title{"Python 生成器原理与应用深度解析 "}
-\author{" 黄京 "}
+\title{"Python 生成器原理与应用深度解析"}
+\author{"黄京"}
 \date{"Apr 05, 2025"}
 \maketitle
 在编程领域中，惰性计算（Lazy Evaluation）是一种延迟执行运算直到真正需要结果的核心技术。Python 通过「生成器」（Generator）实现了这一范式，使得处理海量数据流、构建无限序列等场景变得高效且优雅。本文将深入探讨生成器的工作原理，并通过典型代码示例揭示其在实际开发中的应用价值。\par
@@ -86,7 +86,7 @@ def coroutine():
 
 co = coroutine()
 next(co)  # 启动生成器
-co.send("Hello")  # 输出 "Received: Hello"
+co.send("Hello")  # 输出"Received: Hello"
 \end{lstlisting}
 这种机制在异步编程中被广泛应用，直到 Python 3.5 引入 \verb!async/await! 语法后，生成器协程逐渐被原生协程替代，但其设计思想仍值得研究。\par
 \chapter{性能分析与实践建议}

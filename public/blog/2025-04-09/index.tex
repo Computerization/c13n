@@ -1,5 +1,5 @@
-\title{" 使用 PipeWire 优化 Linux 音频系统的配置与实践 "}
-\author{" 黄京 "}
+\title{"使用 PipeWire 优化 Linux 音频系统的配置与实践"}
+\author{"黄京"}
 \date{"Apr 09, 2025"}
 \maketitle
 在 Linux 生态系统中，音频子系统长期面临着架构碎片化与性能瓶颈的双重挑战。传统解决方案如 ALSA、PulseAudio 和 Jack 各自为政，导致用户在\textbf{低延迟音频处理}、\textbf{多设备动态路由}和\textbf{蓝牙编解码支持}等场景中频繁遭遇技术壁垒。2021 年正式发布的 PipeWire 凭借其\textbf{统一媒体处理架构}和\textbf{API 兼容层}，正在重塑 Linux 音频的底层格局。\par
@@ -19,7 +19,7 @@ systemctl --user enable --now pipewire pipewire-pulse
 \end{lstlisting}
 此过程关键步骤在于\textbf{禁用 PulseAudio 服务}，避免资源竞争。安装后需验证音频服务状态：\par
 \begin{lstlisting}[language=bash]
-pw-top | grep "Driver Rate Quantum"
+pw-top | grep"Driver Rate Quantum"
 # 预期输出示例：48000 Hz | 256 samples (5.33 ms)
 \end{lstlisting}
 配置文件 \verb!~/.config/pipewire/pipewire.conf! 中，建议优先调整时钟源参数：\par
@@ -76,10 +76,10 @@ WirePlumber 作为会话管理器，支持 Lua 脚本实现自动化策略。例
 \begin{lstlisting}[language=lua]
 rule = {
     matches = {
-        { { "device.name", "equals", "bluez_card.XX_XX_XX_XX_XX_XX" } }
+        { {"device.name","equals","bluez_card.XX_XX_XX_XX_XX_XX"} }
     },
     apply_properties = {
-        ["device.profile"] = "a2dp-sink-ldac"
+        ["device.profile"] ="a2dp-sink-ldac"
     }
 }
 table.insert(alsa_monitor.rules, rule)
@@ -88,19 +88,19 @@ table.insert(alsa_monitor.rules, rule)
 \chapter{典型场景实战案例}
 在\textbf{游戏音频优化}场景中，可通过环境变量动态调整量子值：\par
 \begin{lstlisting}[language=bash]
-env PIPEWIRE_LATENCY="64/48000" %command%
+env PIPEWIRE_LATENCY="64/48000"%command%
 \end{lstlisting}
 该命令将量子锁定为 64 样本，应用于 Steam 启动参数时可显著降低《CS2》等游戏的输入到输出延迟。同时配合 \verb!easyeffects! 加载预置均衡器，可增强脚步声等关键音效。\par
 \chapter{常见问题与调试技巧}
 当遭遇\textbf{设备无声}故障时，建议按以下流程排查：\par
 \begin{itemize}
 \item 检查 WirePlumber 设备状态：\begin{lstlisting}[language=bash]
-wpctl status | grep -A 10 "Audio"
+wpctl status | grep -A 10"Audio"
 # 确认目标设备处于 available 状态
 \end{lstlisting}
 
 \item 验证节点连接：\begin{lstlisting}[language=bash]
-pw-dump | jq '.[] | select(.type == "PipeWire:Interface:Node")'
+pw-dump | jq '.[] | select(.type =="PipeWire:Interface:Node")'
 # 检查 input/output 端口是否建立链接
 \end{lstlisting}
 
