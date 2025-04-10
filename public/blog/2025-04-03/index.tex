@@ -1,5 +1,5 @@
-\title{"用 Mermaid.js 提升技术文档的可视化能力"}
-\author{"杨其臻"}
+\title{" 用 Mermaid.js 提升技术文档的可视化能力 "}
+\author{" 杨其臻 "}
 \date{"Apr 03, 2025"}
 \maketitle
 在软件开发领域，技术文档的可读性直接影响团队协作效率与知识传递效果。传统绘图工具如 Visio 或 Draw.io 虽然功能强大，但其二进制文件格式与代码仓库的文本特性存在天然隔阂。Mermaid.js 作为一款基于文本的图表生成库，通过将图表定义为可版本控制的代码，完美解决了文档与图表同步更新的难题。其 \verb!9.4KB! 的轻量化体积与 Markdown 原生支持特性，使其成为技术写作领域的颠覆性工具。\par
@@ -12,8 +12,8 @@
 \begin{lstlisting}[language=mermaid]
 graph LR
   A[客户端] --> B(负载均衡器)
-  B --> C[服务节点1]
-  B --> D[服务节点2]
+  B --> C[服务节点 1]
+  B --> D[服务节点 2]
 \end{lstlisting}
 此代码中 \verb!A! 节点的方括号表示矩形，圆括号 \verb!B()! 生成圆角矩形。箭头运算符 \verb!-->! 自动创建带箭头的连接线，这种声明式语法使得图表结构一目了然。\par
 \chapter{第二部分：流程图的绘制与实战}
@@ -22,19 +22,19 @@ graph LR
 flowchart TB
   subgraph 认证模块
     A[接收凭证] --> B{校验有效性}
-    B -->|通过| C[生成Token]
+    B -->| 通过 | C[生成 Token]
   end
   C --> D[访问资源]
 \end{lstlisting}
-此处的 \verb!subgraph! 会生成带有背景色的容器，\verb!TB! 指定了自上而下的布局方向。连接线条件分支使用 \verb!|条件|! 语法标注，\verb!{校验有效性}! 的菱形节点天然适合表示决策点。\par
+此处的 \verb!subgraph! 会生成带有背景色的容器，\verb!TB! 指定了自上而下的布局方向。连接线条件分支使用 \verb!| 条件 |! 语法标注，\verb!{校验有效性}! 的菱形节点天然适合表示决策点。\par
 样式定制可通过 CSS 类实现：\par
 \begin{lstlisting}[language=mermaid]
 flowchart LR
   classDef cluster fill:#f9f9f9,stroke:#333;
-  subgraph 数据库集群:::cluster
+  subgraph 数据库集群 :::cluster
     A[(主库)]
-    B[(从库1)]
-    C[(从库2)]
+    B[(从库 1)]
+    C[(从库 2)]
   end
 \end{lstlisting}
 \verb!classDef! 指令定义了名为 \verb!cluster! 的样式类，圆括号 \verb!()! 表示圆柱形数据库节点，\verb!:::cluster! 将样式应用于子图容器。\par
