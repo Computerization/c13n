@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Python Dependencies
-        run: pip install openai bs4 requests pyyaml
+        run: pip install openai bs4 requests pyyaml tempfile subprocess
 
       - name: Compose New Article
         env:
