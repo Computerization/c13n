@@ -98,6 +98,145 @@ def summary(article):
         {"role": "user", "content": f"给这篇文章写一个15字的简短介绍：\n\n{article}"}
     ], deepseek, "deepseek-chat")
 
+# LaTeX error handling 
+def remove_latex_comments(latex_str: str) -> str:
+    lines = latex_str.splitlines()
+    cleaned_lines = []
+    for line in lines:
+        m = re.search(r'(?<!\\)%', line)
+        if m:
+            line = line[:m.start()]
+        cleaned_lines.append(line)
+    return "\n".join(cleaned_lines)
+
+def check_balanced_braces(latex_str: str) -> (bool, list):
+    stack = []
+    errors = []
+    for index, char in enumerate(latex_str):
+        if char == '{':
+            stack.append(index)
+        elif char == '}':
+            if not stack:
+                errors.append(f"位置 {index}: 右大括号 '}}' 没有对应的左大括号")
+            else:
+                stack.pop()
+    if stack:
+        for pos in stack:
+            errors.append(f"位置 {pos}: 左大括号 '{{' 没有对应的右大括号")
+    return (len(errors) == 0), errors
+
+def check_environment_matching(latex_str: str) -> (bool, list):
+    errors = []
+    env_stack = []
+    pattern = re.compile(r'\\(begin|end)\s*{([^}]+)}')
+    for m in pattern.finditer(latex_str):
+        cmd = m.group(1)
+        env = m.group(2).strip()
+        pos = m.start()
+        if cmd == "begin":
+            env_stack.append((env, pos))
+        else:  # cmd == "end"
+            if not env_stack:
+                errors.append(f"位置 {pos}: \\end{{{env}}} 没有对应的 \\begin")
+            else:
+                last_env, last_pos = env_stack.pop()
+                if last_env != env:
+                    errors.append(f"位置 {last_pos} 的 \\begin{{{last_env}}} 与位置 {pos} 的 \\end{{{env}}} 不匹配")
+    if env_stack:
+        for env, pos in env_stack:
+            errors.append(f"位置 {pos}: \\begin{{{env}}} 没有对应的 \\end")
+    return (len(errors) == 0), errors
+
+def run_static_checks(latex_snippet: str) -> list:
+    cleaned = remove_latex_comments(latex_snippet)
+    errors = []
+    ok_braces, brace_errors = check_balanced_braces(cleaned)
+    ok_env, env_errors = check_environment_matching(cleaned)
+    if not ok_braces:
+        errors.extend(["大括号错误: " + err for err in brace_errors])
+    if not ok_env:
+        errors.extend(["环境匹配错误: " + err for err in env_errors])
+    return errors
+
+def check_with_pdflatex(latex_snippet: str) -> list:
+    """
+    call pdflatex for compilation checking and return the error messages detected in the compilation log.
+    """
+    template = r"""
+\documentclass{article}
+\usepackage{amsmath}
+\begin{document}
+%s
+\end{document}
+    """ % latex_snippet
+    
+    errors = []
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        tex_file = os.path.join(tmpdirname, "temp.tex")
+        with open(tex_file, "w", encoding="utf-8") as f:
+            f.write(template)
+        try:
+            proc = subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", tex_file],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                cwd=tmpdirname, timeout=15
+            )
+            output = proc.stdout.decode("utf-8") + proc.stderr.decode("utf-8")
+            for line in output.splitlines():
+                if line.startswith("!"):
+                    errors.append(line.strip())
+            if proc.returncode != 0 and not errors:
+                errors.append("pdflatex 返回非 0 错误码，编译可能存在问题。")
+        except Exception as e:
+            errors.append(f"调用 pdflatex 编译时出错: {e}")
+    return errors
+
+def extract_latex_segments(markdown_text: str) -> list:
+    """
+    extract latex segments from markdown
+    """
+    segments = []
+    block_pattern = re.compile(r'\$\$([\s\S]+?)\$\$', re.MULTILINE)
+    segments.extend(block_pattern.findall(markdown_text))
+    inline_pattern = re.compile(r'(?<!\$)\$([^$\n]+?)\$(?!\$)')
+    segments.extend(inline_pattern.findall(markdown_text))
+    return segments
+
+def latex_errors(markdown_text: str) -> dict:
+    segments = extract_latex_segments(markdown_text)
+    report = {}
+    for idx, seg in enumerate(segments):
+        seg = seg.strip()
+        static_errors = run_static_checks(seg)
+        pdflatex_errors = check_with_pdflatex(seg)
+        report[f"公式段 {idx+1}"] = {
+            "原始内容": seg,
+            "静态检测错误": static_errors,
+            "pdflatex 检测错误": pdflatex_errors
+        }
+    return report
+
+def modify_latex(markdown_text: str, error):
+    global deepseek
+    return generate([
+        {"role": "system", "content": "你是LaTeX校验员。以下是一段Markdown文本，其中的LaTeX代码有错误，请基于报错修正。同时文本要遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符。直接在输出中输出文本内容。"},
+        {"role": "user", "content": f"<原文>\n{markdown_text}\n</原文>\n\n<报错>\n{error}\n</报错>"}
+    ], deepseek, "deepseek-reasoner")
+
+is_latin = lambda ch: '\u0000' <= ch <= '\u007F' or '\u00A0' <= ch <= '\u024F'
+is_nonspace_latin = lambda ch: is_latin(ch) and not ch.isspace() and not ch in """*()[]{}"'/-@#"""
+is_nonpunct_cjk = lambda ch: not is_latin(ch) and ch not in "·！￥…（）—【】、；：‘’“”，。《》？「」"
+
+def beautify_string(text):
+    res = ""
+    for idx in range(len(text)):
+        if idx and (
+            (is_nonspace_latin(text[idx])     and is_nonpunct_cjk(text[idx - 1])) or
+            (is_nonspace_latin(text[idx - 1]) and is_nonpunct_cjk(text[idx]))
+        ): res += " "
+        res += text[idx]
+    return res
+
 start = time.time()
 print("     Generating topic:")
 topic = beautify_string(extract_topic(topics_text))
@@ -110,7 +249,7 @@ print(f"   Determined outline: time spent {time.time() - start:.1f} s")
 
 start = time.time()
 print("   Generating article:")
-article = beautify_string(write_from_outline(outline_result))
+article = write_from_outline(outline_result)
 print(f"      Article written: time spent {time.time() - start:.1f} s")
 
 if latex_errors(article):
