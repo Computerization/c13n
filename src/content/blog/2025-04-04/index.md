@@ -19,7 +19,7 @@ JavaScript 的运行时环境由三部分组成：**调用栈（Call Stack）**�
 ```javascript
 while (true) {
   if (调用栈为空) {
-    const 任务 = 任务队列.取出下一个任务();
+    const 任务 = 任务队列 . 取出下一个任务();
     执行(任务);
   }
 }
@@ -55,15 +55,15 @@ console.log('C');
 
 每轮事件循环处理一个宏任务后，会清空所有微任务队列。例如：
 ```javascript
-setTimeout(() => console.log('宏任务1'), 0);
-Promise.resolve().then(() => console.log('微任务1'));
+setTimeout(() => console.log(' 宏任务 1'), 0);
+Promise.resolve().then(() => console.log(' 微任务 1'));
 setTimeout(() => {
-  console.log('宏任务2');
-  Promise.resolve().then(() => console.log('微任务2'));
+  console.log(' 宏任务 2');
+  Promise.resolve().then(() => console.log(' 微任务 2'));
 }, 0);
-// 输出顺序：微任务1 → 宏任务1 → 微任务2 → 宏任务2
+// 输出顺序：微任务 1 → 宏任务 1 → 微任务 2 → 宏任务 2
 ```
-第一轮循环执行主线程代码（视为宏任务），触发微任务 `微任务1`；随后处理 `宏任务1`；下一轮处理 `宏任务2` 时，其内部的 `微任务2` 会立即执行。
+第一轮循环执行主线程代码（视为宏任务），触发微任务 ` 微任务 1`；随后处理 ` 宏任务 1`；下一轮处理 ` 宏任务 2` 时，其内部的 ` 微任务 2` 会立即执行。
 
 ## 浏览器与 Node.js 的差异
 
@@ -134,7 +134,7 @@ async function 读取文件() {
          i++;
        }
        if (i < 1000) {
-         setTimeout(下一帧, 0);
+         setTimeout(下一帧 , 0);
        }
      }
      下一帧();
@@ -154,22 +154,22 @@ async function 读取文件() {
 假设一个页面需要渲染 10,000 条数据，直接操作 DOM 会导致主线程阻塞：
 ```javascript
 // 错误示例
-数据列表.forEach(条目 => {
+数据列表 .forEach(条目 => {
   const div = document.createElement('div');
-  div.textContent = 条目;
+  div.textContent = 条目 ;
   document.body.appendChild(div);
 });
 ```
 优化方案：使用 `requestIdleCallback` 分批次处理
 ```javascript
-function 分片渲染(数据, 索引 = 0) {
+function 分片渲染(数据 , 索引 = 0) {
   requestIdleCallback((空闲时间) => {
-    while (索引 < 数据.length && 空闲时间.剩余时间() > 0) {
+    while (索引 < 数据 .length && 空闲时间 . 剩余时间() > 0) {
       创建元素(数据[索引]);
-      索引++;
+      索引 ++;
     }
-    if (索引 < 数据.length) {
-      分片渲染(数据, 索引);
+    if (索引 < 数据 .length) {
+      分片渲染(数据 , 索引);
     }
   });
 }

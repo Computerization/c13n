@@ -6,7 +6,7 @@
 IndexedDB 作为浏览器原生 NoSQL 数据库，提供了异步事务机制、支持索引查询、存储容量可达硬盘空间的 50\%{} 等特性。其非阻塞设计意味着在写入 10MB 数据时，主线程仍能保持流畅响应——这是同步存储 API 无法企及的优势。\par
 \chapter{核心概念速览}
 \section{架构体系解析}
-每个 IndexedDB 实例由若干数据库（Database）构成，每个数据库包含多个对象存储（Object Store）。对象存储相当于传统数据库中的表，但支持直接存储 JavaScript 对象。例如，用户数据存储可以包含 \verb!{id: 1, name: "John", tags: ["vip", "developer"]}! 这样的复杂结构。\par
+每个 IndexedDB 实例由若干数据库（Database）构成，每个数据库包含多个对象存储（Object Store）。对象存储相当于传统数据库中的表，但支持直接存储 JavaScript 对象。例如，用户数据存储可以包含 \verb!{id: 1, name: "John", tags: ["vip","developer"]}! 这样的复杂结构。\par
 索引（Index）机制允许在非主键字段上建立快速查询通道。假设在 \verb!users! 存储中为 \verb!name! 字段创建索引，即可实现近似 SQL 的 \verb!WHERE name = 'John'! 查询。事务（Transaction）则确保操作的原子性——要么全部成功，要么回滚到操作前状态。\par
 \section{技术选型对比}
 与 Web SQL 相比，IndexedDB 避免了 SQL 注入风险且符合现代 NoSQL 发展趋势。相较于新兴的 OPFS（Origin Private File System），IndexedDB 更适合结构化数据存储，而 OPFS 更擅长处理文件系统类操作。当数据量超过 500MB 时，建议优先考虑 IndexedDB 的索引查询能力。\par

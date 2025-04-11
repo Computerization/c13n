@@ -16,7 +16,7 @@ IndexedDB 作为浏览器原生 NoSQL 数据库，提供了异步事务机制、
 
 ### 架构体系解析
 
-每个 IndexedDB 实例由若干数据库（Database）构成，每个数据库包含多个对象存储（Object Store）。对象存储相当于传统数据库中的表，但支持直接存储 JavaScript 对象。例如，用户数据存储可以包含 `{id: 1, name: "John", tags: ["vip", "developer"]}` 这样的复杂结构。
+每个 IndexedDB 实例由若干数据库（Database）构成，每个数据库包含多个对象存储（Object Store）。对象存储相当于传统数据库中的表，但支持直接存储 JavaScript 对象。例如，用户数据存储可以包含 `{id: 1, name: "John", tags: ["vip","developer"]}` 这样的复杂结构。
 
 索引（Index）机制允许在非主键字段上建立快速查询通道。假设在 `users` 存储中为 `name` 字段创建索引，即可实现近似 SQL 的 `WHERE name = 'John'` 查询。事务（Transaction）则确保操作的原子性——要么全部成功，要么回滚到操作前状态。
 

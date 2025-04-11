@@ -28,12 +28,18 @@ const { Content } = await post.render();
         <div class="animate">
             <BackToPrev href="/blog"> Back to Posts </BackToPrev>
         </div>
-        <div class="space-y-1 my-10" lang="zh">
+        <div class="space-y-1 mt-10" lang="zh">
             <div class="animate flex flex-wrap items-center gap-x-1.5 gap-y-2">
                 <div class="font-base text-sm flex items-center">
                     <FormattedDate date={post.data.date} />
                 </div>
 
+                <div class="flex items-center">
+                    <span>&bull;</span>
+                    <div class="font-base text-sm ml-1.5">
+                        {post.data.author}
+                    </div>
+                </div>
                 <div class="flex items-center">
                     <span>&bull;</span>
                     <div class="font-base text-sm ml-1.5">
@@ -58,12 +64,28 @@ const { Content } = await post.render();
 
                 <div class="flex items-center">
                     <span>&bull;</span>
-                    <div class="ml-1.5">
-                        <CopyText
-                            text={"本文已收录于 c13n ([c13n.club](https://c13n.club))。\n\n" +
-                                post.body +
-                                "\n\n👇点击 **阅读原文** 查看网页版"}
-                        />
+                    <div class="ml-1.5 font-base text-sm">
+                        Copy
+                        <span class="inline-flex gap-x-1">
+                            <CopyText
+                                text={"本文已收录于 c13n ([c13n.club](https://c13n.club))。\n\n" +
+                                    post.body +
+                                    "\n\n👇点击 **阅读原文** 查看网页版"}
+                                label={"Content"}
+                            />
+                            <CopyText
+                                text={post.data.title + " | c13n"}
+                                label={"Title"}
+                            />
+                            <CopyText
+                                text={post.data.author}
+                                label={"Author"}
+                            />
+                            <CopyText
+                                text={post.data.description}
+                                label={"Description"}
+                            />
+                        </span>
                     </div>
                 </div>
             </div>
@@ -71,9 +93,10 @@ const { Content } = await post.render();
                 class="animate text-3xl font-semibold text-black dark:text-white"
             >
                 {post.data.title}
-                <span class="inline-block w-0 h-px overflow-hidden">|</span>
-                <span class="inline-block w-0 h-px overflow-hidden">c13n</span>
             </div>
+        </div>
+        <div class="animate text-sm font-base mt-3 mb-10">
+            {post.data.description}
         </div>
         <article class="animate" lang="zh">
             <Content />

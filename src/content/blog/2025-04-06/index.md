@@ -200,7 +200,7 @@ mod ffi {
         handle: *mut std::ffi::c_void,
     }
 
-    extern "C" {
+    extern"C"{
         pub fn create_context() -> *mut CContext;
         pub fn free_context(ctx: *mut CContext);
     }

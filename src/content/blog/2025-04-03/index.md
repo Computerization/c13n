@@ -18,8 +18,8 @@ pdf: true
 ```mermaid
 graph LR
   A[客户端] --> B(负载均衡器)
-  B --> C[服务节点1]
-  B --> D[服务节点2]
+  B --> C[服务节点 1]
+  B --> D[服务节点 2]
 ```  
 此代码中 `A` 节点的方括号表示矩形，圆括号 `B()` 生成圆角矩形。箭头运算符 `-->` 自动创建带箭头的连接线，这种声明式语法使得图表结构一目了然。
 
@@ -29,20 +29,20 @@ graph LR
 flowchart TB
   subgraph 认证模块
     A[接收凭证] --> B{校验有效性}
-    B -->|通过| C[生成Token]
+    B -->| 通过 | C[生成 Token]
   end
   C --> D[访问资源]
 ```  
-此处的 `subgraph` 会生成带有背景色的容器，`TB` 指定了自上而下的布局方向。连接线条件分支使用 `|条件|` 语法标注，`{校验有效性}` 的菱形节点天然适合表示决策点。  
+此处的 `subgraph` 会生成带有背景色的容器，`TB` 指定了自上而下的布局方向。连接线条件分支使用 `| 条件 |` 语法标注，`{校验有效性}` 的菱形节点天然适合表示决策点。  
 
 样式定制可通过 CSS 类实现：  
 ```mermaid
 flowchart LR
   classDef cluster fill:#f9f9f9,stroke:#333;
-  subgraph 数据库集群:::cluster
+  subgraph 数据库集群 :::cluster
     A[(主库)]
-    B[(从库1)]
-    C[(从库2)]
+    B[(从库 1)]
+    C[(从库 2)]
   end
 ```  
 `classDef` 指令定义了名为 `cluster` 的样式类，圆括号 `()` 表示圆柱形数据库节点，`:::cluster` 将样式应用于子图容器。
@@ -65,7 +65,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   A[[用户终端]] --> B{{认证中心}}
-  click B "https://auth.example.com" _blank
+  click B"https://auth.example.com"_blank
 ```  
 `click` 指令为节点添加了超链接，`_blank` 参数指定在新标签页打开。导出为 SVG 时需调用 `mermaid.initialize()` 并设置 `securityLevel: 'loose'` 以保留交互特性。
 
