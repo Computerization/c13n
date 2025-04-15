@@ -35,9 +35,9 @@ interface User {
 
 ### 关键工具链介绍  
 实现 Protobuf 到 TypeScript 的转换依赖以下工具：  
-- **`protoc` 编译器**：核心代码生成引擎，通过插件机制扩展功能  
-- **`ts-protoc-gen` 插件**：生成 `.d.ts` 类型声明文件  
-- **`@grpc/grpc-js`**：Node.js 的 gRPC 实现库，支持 TypeScript 类型  
+- `protoc` **编译器**：核心代码生成引擎，通过插件机制扩展功能  
+- `ts-protoc-gen` **插件**：生成 `.d.ts` 类型声明文件  
+- `@grpc/grpc-js`：Node.js 的 gRPC 实现库，支持 TypeScript 类型  
 
 典型编译命令如下：  
 ```bash
