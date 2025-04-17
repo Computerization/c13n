@@ -23,10 +23,12 @@ PostgreSQL 使用基于消息的通信模型，前端（客户端）与后端（
 以当前推荐的 SCRAM-SHA-256 认证为例，其交互流程基于挑战-响应机制。服务端首先发送包含盐值 `s`、迭代次数 `i` 的 `AuthenticationSASLContinue` 消息。客户端需计算：
 
 $$
-ClientKey = HMAC(SHA256, SaltedPassword, "Client Key") \\
-StoredKey = SHA256(ClientKey) \\
-ClientSignature = HMAC(SHA256, StoredKey, AuthMessage) \\
-ClientProof = ClientKey \oplus ClientSignature
+\begin{aligned}
+\text{ClientKey} &= \text{HMAC(SHA256, SaltedPassword, ``Client Key'')} \\
+\text{StoredKey} &= \text{SHA256(ClientKey)} \\
+\text{ClientSignature} &= \text{HMAC(SHA256, StoredKey, AuthMessage)} \\
+\text{ClientProof} &= \text{ClientKey} \oplus \text{ClientSignature}
+\end{aligned}
 $$
 
 其中 `SaltedPassword` 通过 PBKDF2 函数生成。代码实现时需严格处理编码转换，例如将二进制哈希值转换为 Base64 字符串：
@@ -56,7 +58,7 @@ def generate_client_proof(password, salt, iterations):
    ```
 2. **Bind 阶段**：绑定参数值与结果格式
    ```python
-   msg = b'B\x00\x00\x00\x1a' 
+   msg = b'B\x00\x00\x00\x1a'
    msg += b'\x00portal1\x00stmt1\x00\x01\x00\x01\x00\x00\x00\x04\x00\x00\x00\x0a'
    ```
    其中 `\x00\x00\x00\x0a` 表示整型参数值为 10，采用二进制格式传输。
