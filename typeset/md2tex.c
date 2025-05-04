@@ -364,7 +364,7 @@ static int text_callback(MD_TEXTTYPE type, const MD_CHAR *text, MD_SIZE size,
     case MD_TEXT_NULLCHAR:
       break;
     case MD_TEXT_BR:
-      RENDER_VERBATIM(r, "\\par");
+      RENDER_VERBATIM(r, "\\par\n");
       break;
     case MD_TEXT_SOFTBR:
       RENDER_VERBATIM(r, "\n");
