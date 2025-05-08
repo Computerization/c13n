@@ -76,7 +76,7 @@ Underscore denotes an underline instead of an ordinary emphasis or strong emphas
 
 #### TeX-style Equation
 
-TeX like inline math spans (`$...$`) and display math spans (`$$...$$`) ate supported. You are not required to escape ordinary dollars signs in most cases.
+TeX like inline math spans (`$...$`) and display math spans (`$$...$$`) are supported. You are not required to escape ordinary dollars signs in most cases.
 
 ```Markdown
 This is an inline math span: $a + b = c$.
