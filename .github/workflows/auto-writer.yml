@@ -19,7 +19,7 @@ jobs:
       - name: Compose New Article
         env:
           DS_APIKEY: ${{ secrets.DS_APIKEY }}
-        run: python3 writer.py
+        run: python3 scripts/writer.py
 
       - name: Commit and Push Changes
         env:

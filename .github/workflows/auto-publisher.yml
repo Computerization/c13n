@@ -5,11 +5,11 @@ on:
   workflow_call:
   push:
     paths:
-      - 'src/**'
-      - '**.py'
-      - '**.md'
-      - '**.c'
-      - '**.ltx'
+      - "src/**"
+      - "**.py"
+      - "**.md"
+      - "**.c"
+      - "**.ltx"
 
 jobs:
   publish_article:
@@ -31,12 +31,12 @@ jobs:
         run: cc -v
 
       - name: Publish Individual Post
-        run: python3 make.py post
+        run: python3 c13n/scripts/make.py post
 
       - name: Publish Batch Monthly
         run: |
           mkdir -p ./public/batch
-          python3 make.py batch
+          python3 scripts/make.py batch
 
       - name: Commit and Push Changes
         env:
