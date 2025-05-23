@@ -144,8 +144,8 @@ for line in lines:
             f'author: "{author}"',
             f'date: "{datetime.datetime.now().strftime("%b %d, %Y")}"',
             f'description: "{summary_result}"',
-            f'latex: true',
-            f'pdf: true',
+            'latex: true',
+            'pdf: true',
             "---",
         ]) + "\n"
 
