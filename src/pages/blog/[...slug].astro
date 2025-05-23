@@ -62,7 +62,10 @@ const { Content } = await post.render();
                     )
                 }
 
-                <div class="flex items-center">
+                <div
+                    class="hidden md:flex items-center opacity-0 transition-opacity duration-300 ease-in-out pointer-events-none"
+                    id="copy-section"
+                >
                     <span>&bull;</span>
                     <div class="ml-1.5 font-base text-sm">
                         Copy
@@ -73,17 +76,20 @@ const { Content } = await post.render();
                                     "\n\n👇点击 **阅读原文** 查看网页版"}
                                 label={"Content"}
                             />
+                            /
                             <CopyText
                                 text={post.data.title + " | c13n"}
                                 label={"Title"}
                             />
+                            <!-- /
                             <CopyText
                                 text={post.data.author}
                                 label={"Author"}
-                            />
+                            /> -->
+                            /
                             <CopyText
                                 text={post.data.description}
-                                label={"Description"}
+                                label={"Desc"}
                             />
                         </span>
                     </div>
@@ -103,3 +109,94 @@ const { Content } = await post.render();
         </article>
     </Container>
 </PageLayout>
+
+<script>
+    let cleanupCopyToggle: (() => void) | null = null;
+
+    function initCopyToggle(): void {
+        // Clean up previous event listeners if they exist
+        if (cleanupCopyToggle) {
+            cleanupCopyToggle();
+        }
+
+        const copySection = document.getElementById(
+            "copy-section",
+        ) as HTMLElement | null;
+        if (!copySection) return;
+
+        let isCommandPressed = false;
+
+        function showCopySection(): void {
+            if (!isCommandPressed && copySection) {
+                isCommandPressed = true;
+                copySection.classList.remove(
+                    "opacity-0",
+                    "pointer-events-none",
+                );
+                copySection.classList.add("opacity-100", "pointer-events-auto");
+            }
+        }
+
+        function hideCopySection(): void {
+            if (isCommandPressed && copySection) {
+                isCommandPressed = false;
+                copySection.classList.remove(
+                    "opacity-100",
+                    "pointer-events-auto",
+                );
+                copySection.classList.add("opacity-0", "pointer-events-none");
+            }
+        }
+
+        function handleKeyDown(event: KeyboardEvent): void {
+            if (event.metaKey || event.ctrlKey) {
+                showCopySection();
+            }
+        }
+
+        function handleKeyUp(event: KeyboardEvent): void {
+            if (!event.metaKey && !event.ctrlKey) {
+                hideCopySection();
+            }
+        }
+
+        function handleWindowBlur(): void {
+            hideCopySection();
+        }
+
+        function handleWindowFocus(): void {
+            // Reset state when window regains focus
+            hideCopySection();
+        }
+
+        function handleVisibilityChange(): void {
+            if (document.hidden) {
+                hideCopySection();
+            }
+        }
+
+        // Event listeners
+        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
+        window.addEventListener("blur", handleWindowBlur);
+        window.addEventListener("focus", handleWindowFocus);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        // Store cleanup
+        cleanupCopyToggle = (): void => {
+            document.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener("keyup", handleKeyUp);
+            window.removeEventListener("blur", handleWindowBlur);
+            window.removeEventListener("focus", handleWindowFocus);
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange,
+            );
+        };
+    }
+
+    // Initialize on page load
+    document.addEventListener("DOMContentLoaded", initCopyToggle);
+    // Re-initialize on Astro page transitions
+    document.addEventListener("astro:after-swap", initCopyToggle);
+</script>

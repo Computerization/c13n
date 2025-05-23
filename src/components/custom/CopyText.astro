@@ -1,4 +1,9 @@
 ---
+type Props = {
+	text: string;
+	label: string;
+};
+
 const { text, label } = Astro.props;
 ---
 
@@ -9,8 +14,11 @@ const { text, label } = Astro.props;
 		data-copy-label={label}
 		onclick="
 			navigator.clipboard.writeText(this.getAttribute('data-copy-text'));
-			this.innerText = 'Copied!';
-			setTimeout(() => {this.innerText = this.getAttribute('data-copy-label')}, 1000)
+			const element = this;
+			element.innerText = 'Copied!';
+			setTimeout(() => {
+				element.innerText = element.getAttribute('data-copy-label') || '';
+			}, 1000)
 		">
 		{ label }
 	</span>
