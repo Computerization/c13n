@@ -31,7 +31,7 @@ jobs:
         run: cc -v
 
       - name: Publish Individual Post
-        run: python3 c13n/scripts/make.py post
+        run: python3 scripts/make.py post
 
       - name: Publish Batch Monthly
         run: |
