@@ -5,7 +5,7 @@ on:
   workflow_call:
   push:
     paths:
-      - "src/**"
+      - "src/content/blog/**"
       - "**.py"
       - "**.md"
       - "**.c"
