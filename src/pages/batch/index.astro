@@ -16,13 +16,15 @@ const blog = (await getCollection("blog"))
 
 const batches = pdfFiles
   .map((file) => {
-    const [, idStr] = file.split("_");
+    const [, idStr, hashWithExt] = file.split("_");
     const id = parseInt(idStr, 10);
+    const hash = hashWithExt.replace(/\.pdf$/, "");
     const posts = blog.slice(id * 5, id * 5 + 5);
     return {
       id,
       pdf: `/batch/${file}`,
       posts,
+      hash,
     };
   })
   .sort((a, b) => b.id - a.id);
@@ -43,7 +45,7 @@ const batches = pdfFiles
       </section>
       <div class="grid gap-6 md:grid-cols-2">
         {batches.map((batch) => (
-          <BatchCard id={batch.id} pdf={batch.pdf} posts={batch.posts} />
+          <BatchCard id={batch.id} pdf={batch.pdf} posts={batch.posts} hash={batch.hash} />
         ))}
       </div>
     </div>
