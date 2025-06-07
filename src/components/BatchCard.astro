@@ -1,0 +1,44 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+interface Props {
+  id: number;
+  pdf: string;
+  posts: CollectionEntry<"blog">[];
+}
+
+const { id, pdf, posts } = Astro.props as Props;
+---
+<a href={pdf} class="group block overflow-hidden rounded-lg border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300 ease-in-out">
+  <canvas id={`preview-${id}`} class="w-full h-48 object-cover bg-black/5 dark:bg-white/10" />
+  <div class="p-4 space-y-2">
+    <div class="font-semibold">Batch #{id}</div>
+    <ul class="text-sm list-disc list-inside space-y-0.5">
+      {posts.map((p) => (
+        <li>{p.data.title}</li>
+      ))}
+    </ul>
+  </div>
+</a>
+
+<script type="module" is:inline>
+  const pdfUrl = "${pdf}";
+  const canvasId = "preview-${id}";
+  import("https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/+esm").then((pdfjsLib) => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    pdfjsLib.getDocument(pdfUrl).promise.then((pdfDoc) => {
+      pdfDoc.getPage(1).then((page) => {
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = canvas.clientWidth / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        const context = canvas.getContext("2d");
+        page.render({ canvasContext: context, viewport: scaledViewport });
+      });
+    });
+  });
+</script>
