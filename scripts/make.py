@@ -137,7 +137,10 @@ def batch():
 		if bch_start + bch_size > len(posts): break
 		# Current range of indices and hash of date strings
 		bch_range = list(range(bch_start, bch_start + bch_size))
-		hsh = hash_str(" ".join([posts[i] for i in bch_range]))[-6:]
+		# Join contents of each post to generate hash
+		hsh = hash_str("".join([
+			File(f"{src_dir}{posts[i]}").read() for i in bch_range
+		]))[-6:]
 		existing_hsh = compiled_hsh.get(bch_id)
 		# If this batch is already present
 		if existing_hsh:
