@@ -1,5 +1,5 @@
 ---
-title: "引言"
+title: "用 AVX512 指令集优化哈希算法"
 author: "黄京"
 date: "May 31, 2025"
 description: "AVX512 指令集优化哈希算法性能实践"
