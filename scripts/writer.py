@@ -7,6 +7,7 @@ import datetime
 import os
 import glob
 import yaml
+import clean_text
 
 path_to = f'src/content/blog/{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
@@ -129,7 +130,7 @@ print("   Generating summary:")
 summary_result = beautify_string(summary(article))
 print(f"      Decided Summary: {summary_result}; time spent {time.time() - start:.1f} s")
 
-lines = iter(article.split("\n"))
+lines = iter(article.splitlines())
 markdown_file = ""
 author = random.choice(["杨其臻", "杨子凡", "叶家炜", "黄京"])
 print(f"        Rolled author: {author}")
@@ -152,10 +153,7 @@ for line in lines:
         markdown_file += metadata
         break
 
-for line in lines:
-    if line.startswith("---") \
-        or (line.startswith("#") and any([wd in line for wd in ["引言", "总结", "结语"]])): continue
-    markdown_file += line + "\n"
+markdown_file += clean_text.clean_text(lines)
 
 with open(f"{path_to}/index.md", "w", encoding="utf-8") as f:
     f.write(markdown_file)
