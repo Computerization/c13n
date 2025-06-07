@@ -139,7 +139,7 @@ def batch():
 		bch_range = list(range(bch_start, bch_start + bch_size))
 		# Join contents of each post to generate hash
 		hsh = hash_str("".join([
-			File(f"{src_dir}{posts[i]}").read() for i in bch_range
+			File(f"{src_dir}{posts[i]}/index.md").read() for i in bch_range
 		]))[-6:]
 		existing_hsh = compiled_hsh.get(bch_id)
 		# If this batch is already present
