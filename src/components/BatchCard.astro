@@ -18,10 +18,10 @@ const longHash = createHash("sha256").update(hash).digest("hex");
 const hue = (parseInt(longHash.slice(0, 2), 16) / 255) * 360;
 const light = 70 + (parseInt(longHash.slice(2, 4), 16) % 10);
 const color = `hsl(${hue.toFixed(0)}, 50%, ${light}%)`;
-const pixelWidth = parseInt(longHash[4], 16) + 15;
+const pixelWidth = parseInt(longHash[4], 16) + 18;
 
-const width = Math.ceil(350 / pixelWidth) + 3;
-const height = Math.ceil(200 / pixelWidth) + 3;
+const width = Math.ceil(350 / pixelWidth);
+const height = Math.ceil(200 / pixelWidth);
 const coords: { x: number; y: number }[] = [];
 let i = 0;
 for (let y = 0; y < height; y++) {
@@ -50,8 +50,8 @@ const info = `${dateStr} - ${hash}`;
   class="group relative block overflow-hidden rounded-lg border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300 ease-in-out">
   <div class="relative w-full h-48 bg-black/5 dark:invert">
     <svg
-      viewBox="0 0 375 225"
-      preserveAspectRatio="none"
+      viewBox={`0 0 ${width * pixelWidth} ${height * pixelWidth}`}
+      preserveAspectRatio="xMaxYMax slice"
       class="w-full h-full opacity-50"
     >
       {coords.map(({ x, y }) => (
