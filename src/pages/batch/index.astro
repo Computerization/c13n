@@ -1,0 +1,53 @@
+---
+import fs from "node:fs";
+import path from "node:path";
+import { getCollection } from "astro:content";
+import PageLayout from "@layouts/PageLayout.astro";
+import Container from "@components/Container.astro";
+import BatchCard from "@components/BatchCard.astro";
+import { BATCH } from "@consts";
+
+const pdfDir = path.resolve("./public/batch");
+const pdfFiles = fs.readdirSync(pdfDir).filter((f) => f.endsWith(".pdf"));
+
+const blog = (await getCollection("blog"))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+
+const batches = pdfFiles
+  .map((file) => {
+    const [, idStr, hashWithExt] = file.split("_");
+    const id = parseInt(idStr, 10);
+    const hash = hashWithExt.replace(/\.pdf$/, "");
+    const posts = blog.slice(id * 5, id * 5 + 5);
+    return {
+      id,
+      pdf: `/batch/${file}`,
+      posts,
+      hash,
+    };
+  })
+  .sort((a, b) => b.id - a.id);
+---
+<PageLayout title={BATCH.TITLE} description={BATCH.DESCRIPTION}>
+  <Container>
+    <div class="space-y-8">
+      <section class="animate space-y-4">
+        <h5 class="font-semibold text-black dark:text-white">
+          {BATCH.TITLE}
+        </h5>
+        <article>
+          <p>
+            Browse compiled newsletters. Each compilation contains five posts in
+            chronological order.
+          </p>
+        </article>
+      </section>
+      <div class="grid gap-6 md:grid-cols-2">
+        {batches.map((batch) => (
+          <BatchCard id={batch.id} pdf={batch.pdf} posts={batch.posts} hash={batch.hash} />
+        ))}
+      </div>
+    </div>
+  </Container>
+</PageLayout>
