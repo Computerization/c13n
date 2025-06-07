@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { createHash } from "node:crypto";
 
 interface Props {
   id: number;
@@ -10,28 +11,36 @@ interface Props {
 
 const { id, pdf, posts, hash } = Astro.props as Props;
 
-// generate a near-gray hue derived from the hash so every batch has a slightly
-// different colour
-const hue = (parseInt(hash.slice(0, 2), 16) / 255) * 360;
-const light = 40 + (parseInt(hash.slice(2, 4), 16) % 50);
-const color = `hsl(${hue.toFixed(0)}, 20%, ${light}%)`;
+const longHash = createHash("sha256").update(hash).digest("hex");
 
-// build a 25x15 pixel art grid, mirroring horizontally
+// generate a near-gray hue derived from the hash so every batch has a slightly
+// different colour. keep saturation low and lightness high
+const hue = (parseInt(longHash.slice(0, 2), 16) / 255) * 360;
+const light = 80 + (parseInt(longHash.slice(2, 4), 16) % 15); // 80-94
+const color = `hsl(${hue.toFixed(0)}, 10%, ${light}%)`;
+
+// build a 25x15 pixel art grid using the long hash for randomness
 const width = 25;
 const height = 15;
 const coords: { x: number; y: number }[] = [];
 let i = 0;
 for (let y = 0; y < height; y++) {
-  for (let x = 0; x < Math.ceil(width / 2); x++, i++) {
-    if (parseInt(hash[i % hash.length], 16) % 2 === 1) {
+  for (let x = 0; x < width; x++, i++) {
+    if (parseInt(longHash[i % longHash.length], 16) % 2 === 1) {
       coords.push({ x, y });
-      const mirror = width - 1 - x;
-      if (mirror !== x) coords.push({ x: mirror, y });
     }
   }
 }
 
-const date = posts[0]?.data.date ?? "";
+const date = posts[0]?.data.date;
+const dateStr = date
+  ? date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+  : "";
+const info = `${dateStr} (${hash})`;
 ---
 <a
   href={pdf}
@@ -42,16 +51,15 @@ const date = posts[0]?.data.date ?? "";
     <svg
       viewBox="0 0 375 225"
       preserveAspectRatio="none"
-      class="w-full h-full"
+      class="w-full h-full dark:invert"
     >
       {coords.map(({ x, y }) => (
         <rect x={x * 15} y={y * 15} width="15" height="15" fill={color} />
       ))}
     </svg>
-    <div class="absolute inset-0 flex flex-col items-center justify-center font-mono text-black dark:text-white">
-      <div class="font-bold text-3xl sm:text-4xl">Batch #{id}</div>
-      <div class="text-xs sm:text-sm">{date}</div>
-      <div class="text-xs sm:text-sm">{hash}</div>
+    <div class="absolute inset-0 flex flex-col items-center justify-center font-mono text-black dark:text-white text-center">
+      <div class="font-bold text-3xl sm:text-4xl mb-1">Batch #{id}</div>
+      <div class="text-xs sm:text-sm">{info}</div>
     </div>
   </div>
   <svg
