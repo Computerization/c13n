@@ -289,11 +289,7 @@ static int enter_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     render_open_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);
     break;
   case MD_SPAN_CODE:
-    if (r->heading_scope == 0) {
-      RENDER_VERBATIM(r, "\\verb!");
-      r->verbatim_type = 2;
-    } else
-      RENDER_VERBATIM(r, "\\texttt{");
+    RENDER_VERBATIM(r, "\\InlineCode{");
     break;
   case MD_SPAN_DEL:
     RENDER_VERBATIM(r, "\\del{");
@@ -331,11 +327,7 @@ static int leave_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     render_close_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);
     break;
   case MD_SPAN_CODE:
-    if (r->heading_scope == 0) {
-      RENDER_VERBATIM(r, "!");
-      r->verbatim_type = 0;
-    } else
-      RENDER_VERBATIM(r, "}");
+    RENDER_VERBATIM(r, "}");
     break;
   case MD_SPAN_DEL:
     RENDER_VERBATIM(r, "}");
