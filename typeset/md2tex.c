@@ -289,7 +289,7 @@ static int enter_span_calback(MD_SPANTYPE type, void *detail, void *userdata) {
     render_open_img_span(r, (MD_SPAN_IMG_DETAIL *)detail);
     break;
   case MD_SPAN_CODE:
-    RENDER_VERBATIM(r, "\\InlineCode{");
+    RENDER_VERBATIM(r, "\\texttt{");
     break;
   case MD_SPAN_DEL:
     RENDER_VERBATIM(r, "\\del{");
