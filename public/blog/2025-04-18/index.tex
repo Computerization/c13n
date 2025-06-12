@@ -5,7 +5,7 @@
 云计算的发展经历了从物理机到虚拟机再到容器的技术迭代，但传统虚拟化技术逐渐暴露出资源开销大、启动延迟高、安全隐患多等瓶颈。与此同时，边缘计算、Serverless 架构和微服务等场景对轻量化与专用化提出了更苛刻的要求。在此背景下，\textbf{Unikernel} 作为一种新型操作系统架构应运而生。其核心理念是将应用程序与操作系统内核深度融合，通过消除冗余抽象层实现极致的性能与安全特性。\par
 \chapter{Unikernel 技术原理深度解析}
 \section{传统操作系统的架构瓶颈}
-传统宏内核（Monolithic Kernel）如 Linux 采用分层设计，通过系统调用（Syscall）为应用程序提供通用服务接口。这种设计导致每个系统调用需要经历用户态到内核态的上下文切换，产生约 1000 个时钟周期的开销。以进程创建为例，执行 \InlineCode{fork()} 系统调用时内核需复制页表、文件描述符等元数据，而 Unikernel 采用单一地址空间设计，直接通过函数调用完成资源分配，消除上下文切换开销。\par
+传统宏内核（Monolithic Kernel）如 Linux 采用分层设计，通过系统调用（Syscall）为应用程序提供通用服务接口。这种设计导致每个系统调用需要经历用户态到内核态的上下文切换，产生约 1000 个时钟周期的开销。以进程创建为例，执行 \texttt{fork()} 系统调用时内核需复制页表、文件描述符等元数据，而 Unikernel 采用单一地址空间设计，直接通过函数调用完成资源分配，消除上下文切换开销。\par
 \section{编译时优化机制}
 Unikernel 的核心创新在于\textbf{编译时系统构建}。以 MirageOS 为例，应用程序与 LibOS 库通过 OCaml 编译器交叉编译为专用镜像：\par
 \begin{lstlisting}[language=ocaml]
@@ -13,7 +13,7 @@ let main =
   let module Console = Mirage_console in
   Console.log console "Booting unikernel..." 
 \end{lstlisting}
-此代码片段中，\InlineCode{Mirage\_{}console} 模块直接链接到最终镜像，取代传统操作系统的动态加载机制。编译器会静态分析依赖关系，仅保留实际使用的驱动程序与协议栈。例如若应用无需 TCP/IP 协议，则相关代码会被完全剔除，使镜像体积缩减至 1MB 以内。\par
+此代码片段中，\texttt{Mirage\_{}console} 模块直接链接到最终镜像，取代传统操作系统的动态加载机制。编译器会静态分析依赖关系，仅保留实际使用的驱动程序与协议栈。例如若应用无需 TCP/IP 协议，则相关代码会被完全剔除，使镜像体积缩减至 1MB 以内。\par
 \section{安全隔离模型}
 Unikernel 通过类型安全语言和最小化攻击面提升安全性。Unikraft 项目使用 Rust 重写核心组件，利用所有权系统消除内存错误：\par
 \begin{lstlisting}[language=rust]
@@ -22,7 +22,7 @@ fn network_init() -> Result<Arc<dyn NetDevice>, Error> {
     Ok(Arc::new(dev))
 }
 \end{lstlisting}
-此处的 \InlineCode{Result} 类型强制处理所有潜在错误，而 \InlineCode{Arc} 智能指针确保线程安全。由于 Unikernel 不提供 Shell 或通用系统调用接口，攻击者无法通过 \InlineCode{/bin/sh} 等路径注入代码，使得 CVE-2021-4034 类漏洞在 Unikernel 环境中天然免疫。\par
+此处的 \texttt{Result} 类型强制处理所有潜在错误，而 \texttt{Arc} 智能指针确保线程安全。由于 Unikernel 不提供 Shell 或通用系统调用接口，攻击者无法通过 \texttt{/bin/sh} 等路径注入代码，使得 CVE-2021-4034 类漏洞在 Unikernel 环境中天然免疫。\par
 \chapter{Unikernel 在现代云计算中的应用场景}
 \section{边缘计算场景的性能突破}
 在 ARM 架构物联网设备上，Unikernel 展现出独特优势。某工业传感器项目采用 IncludeOS 构建数据处理节点，镜像体积仅 2.3MB，冷启动时间 8ms，内存占用 16MB。相比之下，同等功能的 Docker 容器需要 120MB 存储空间和 200ms 启动时间。其关键优化在于移除未使用的 USB 驱动和文件系统模块，使内存访问局部性提升 40\%{}。\par

@@ -24,7 +24,7 @@ for _, follower := range followers {
   }(follower)
 }
 \end{lstlisting}
-这段代码详细解读：Leader 为每个 Follower 启动一个独立的 goroutine（轻量级线程），在循环中持续复制日志。首先，\InlineCode{log.getEntries(f.nextIndex)} 从本地日志存储获取从 Follower 的 nextIndex 开始的条目序列，nextIndex 表示 Follower 下一条待接收日志的索引。接着，通过 \InlineCode{f.AppendEntries(entries)} 发送 AppendEntries RPC，包含这些条目。如果响应 \InlineCode{resp.Success} 为真，表示 Follower 成功接收日志，Leader 更新 \InlineCode{f.matchIndex} 为最后条目的索引，以标记日志匹配位置。否则，若响应失败（如日志不一致），Leader 递减 \InlineCode{f.nextIndex} 回溯重试，这处理了 Follower 日志落后或冲突的场景。该设计实现了高并发日志传播，但需注意线程安全和退出条件以避免资源泄漏。\par
+这段代码详细解读：Leader 为每个 Follower 启动一个独立的 goroutine（轻量级线程），在循环中持续复制日志。首先，\texttt{log.getEntries(f.nextIndex)} 从本地日志存储获取从 Follower 的 nextIndex 开始的条目序列，nextIndex 表示 Follower 下一条待接收日志的索引。接着，通过 \texttt{f.AppendEntries(entries)} 发送 AppendEntries RPC，包含这些条目。如果响应 \texttt{resp.Success} 为真，表示 Follower 成功接收日志，Leader 更新 \texttt{f.matchIndex} 为最后条目的索引，以标记日志匹配位置。否则，若响应失败（如日志不一致），Leader 递减 \texttt{f.nextIndex} 回溯重试，这处理了 Follower 日志落后或冲突的场景。该设计实现了高并发日志传播，但需注意线程安全和退出条件以避免资源泄漏。\par
 持久化机制采用 Write-Ahead Log (WAL) 设计，所有状态变更先写入日志文件再应用，确保崩溃恢复时数据不丢失。快照（Snapshot）优化存储空间，当日志过大时触发，将当前状态序列化保存，并截断旧日志；加载时从快照恢复状态机。网络层实现中，RPC 框架如 gRPC 或 Thrift 提供高效通信，需实现消息重试机制应对网络抖动，并通过序列号或唯一 ID 确保 RPC 的幂等性，避免重复操作。\par
 \chapter{工业级优化策略}
 性能优化是工业级 Raft 实现的核心。批处理优化通过合并多个日志条目到单个 AppendEntries RPC，减少网络包量，例如，将 10 条日志打包发送能显著降低延迟；流水线日志复制（Pipeline Replication）允许 Leader 连续发送 RPC 而不等待响应，提升吞吐量，其原理可用数学公式描述：设 $T_{\text{net}}$ 为网络延迟，$T_{\text{proc}}$ 为处理时间，流水线化后吞吐量近似 $\frac{1}{\max(T_{\text{net}}, T_{\text{proc}})}$，远高于串行模型。并行提交策略让 Leader 异步发送日志并等待多数响应，而非阻塞等待，这利用了多核能力。内存优化包括日志条目内存池复用，避免频繁分配释放；稀疏索引（Sparse Index）加速日志定位，例如每 100 条日志建一个索引点，查询时二分查找，时间复杂度从 $O(n)$ 降至 $O(\log n)$。\par

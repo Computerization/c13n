@@ -7,15 +7,15 @@
 Redis 的有序集合（ZSET）和 LevelDB 的 MemTable 均采用跳表作为核心数据结构，这得益于其动态扩展性和高效的并发支持潜力。本文将深入解析跳表的原理，通过 Python 代码实现一个基础版本，并分析其性能特点。\par
 \chapter{跳表的基础知识}
 跳表的本质是\textbf{多层链表的叠加}。最底层为原始链表，存储所有数据节点；上层链表则作为索引层，通过跳跃式遍历加速查询。每个节点的层数由随机过程决定，高层节点稀疏分布，低层节点密集分布。\par
-头节点（Head）作为各层链表的起点，不存储实际数据，仅提供遍历入口。尾节点（Tail）通常为 \InlineCode{None}，标识链表的结束。这种设计使得跳表的查询过程可以从高层快速缩小范围，逐步下沉到底层定位目标。\par
+头节点（Head）作为各层链表的起点，不存储实际数据，仅提供遍历入口。尾节点（Tail）通常为 \texttt{None}，标识链表的结束。这种设计使得跳表的查询过程可以从高层快速缩小范围，逐步下沉到底层定位目标。\par
 跳表的核心思想在于\textbf{空间换时间}。通过为部分节点建立多层索引，将单次查询的路径长度从 O(n) 缩减到 O(\textbackslash{}log n)。随机层数生成策略（如“抛硬币”机制）避免了手动平衡的开销，使得插入操作的时间复杂度稳定在平均 O(\textbackslash{}log n)。\par
 \chapter{跳表的核心操作原理}
 \section{查询操作}
-查询操作的逻辑可概括为“从高层向底层逐级下沉”。以查找值 \InlineCode{target} 为例：\par
+查询操作的逻辑可概括为“从高层向底层逐级下沉”。以查找值 \texttt{target} 为例：\par
 \begin{itemize}
-\item 从最高层头节点出发，向右遍历直至当前节点的后继节点值大于 \InlineCode{target}。
+\item 从最高层头节点出发，向右遍历直至当前节点的后继节点值大于 \texttt{target}。
 \item 下沉到下一层，重复上述过程直至到达底层。
-\item 最终检查底层节点的值是否等于 \InlineCode{target}。
+\item 最终检查底层节点的值是否等于 \texttt{target}。
 \end{itemize}
 这一过程的时间复杂度为 O(\textbackslash{}log n)，因为每层索引的步长呈指数级增长。\par
 \section{插入操作}
@@ -45,7 +45,7 @@ class SkipList:
         self.head = Node(-float('inf'), max_level)  # 头节点初始化为最小值  
         self.current_level = 0  # 当前有效层数  
 \end{lstlisting}
-\InlineCode{Node} 类的 \InlineCode{forward} 数组存储该节点在各层的后继指针。\InlineCode{SkipList} 类的 \InlineCode{max\_{}level} 限制最大层数以防止内存过度消耗，\InlineCode{p} 控制层数生成概率。\par
+\texttt{Node} 类的 \texttt{forward} 数组存储该节点在各层的后继指针。\texttt{SkipList} 类的 \texttt{max\_{}level} 限制最大层数以防止内存过度消耗，\texttt{p} 控制层数生成概率。\par
 \section{随机层数生成}
 \begin{lstlisting}[language=python]
 def random_level(self):  
@@ -80,7 +80,7 @@ def insert(self, value):
         new_node.forward[i] = update[i].forward[i]  
         update[i].forward[i] = new_node  
 \end{lstlisting}
-\InlineCode{update} 数组保存了每层中最后一个小于待插入值的节点。插入新节点时，需从底层到新节点的最高层更新这些节点的指针。\par
+\texttt{update} 数组保存了每层中最后一个小于待插入值的节点。插入新节点时，需从底层到新节点的最高层更新这些节点的指针。\par
 \section{查询方法实现}
 \begin{lstlisting}[language=python]
 def search(self, value):  
@@ -104,7 +104,7 @@ def search(self, value):
 Redis 使用跳表实现有序集合（ZSET），支持 O(\textbackslash{}log n) 的成员查询和范围查询。LevelDB 的 MemTable 同样采用跳表，其内存中的有序键值存储依赖跳表的高效插入与查询。\par
 \section{优化方向}
 \begin{itemize}
-\item \textbf{动态调整最大层数}：根据数据规模自适应调整 \InlineCode{max\_{}level}，避免内存浪费。
+\item \textbf{动态调整最大层数}：根据数据规模自适应调整 \texttt{max\_{}level}，避免内存浪费。
 \item \textbf{概率参数调优}：p 值的选择影响时间与空间效率。p 越小，层数越高，查询越快，但空间消耗越大。
 \item \textbf{并发控制}：通过无锁编程（如 CAS 操作）实现线程安全的跳表。
 \end{itemize}
