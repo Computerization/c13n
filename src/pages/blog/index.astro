@@ -57,9 +57,9 @@ const years = Object.keys(posts).sort((a, b) => parseInt(b) - parseInt(a));
     <Container>
         <div class="space-y-8">
             <section class="animate space-y-4">
-                <h5 class="font-semibold text-black dark:text-white">
+                <h3 class="text-black dark:text-white">
                     Post Archives
-                </h5>
+                </h3>
                 <article>
                     <p>
                         The content provided herein has been meticulously
@@ -72,9 +72,12 @@ const years = Object.keys(posts).sort((a, b) => parseInt(b) - parseInt(a));
                 {
                     years.map((year) => (
                         <section class="animate space-y-6">
-                            <h5 class="font-semibold text-black dark:text-white">
+                            <h4 class="text-black dark:text-white">
                                 {year}
-                            </h5>
+                                <span class="text-stone-700 dark:text-stone-400 font-regular">
+                                    ({Object.values(posts[year]).reduce((acc, month) => acc + month.length, 0)} posts)
+                                </span>
+                            </h4>
                             <div class="space-y-10">
                                 {Object.keys(posts[year])
                                     .sort((a, b) => parseInt(b) - parseInt(a))
@@ -83,8 +86,11 @@ const years = Object.keys(posts).sort((a, b) => parseInt(b) - parseInt(a));
                                             monthNames[parseInt(monthNum) - 1];
                                         return (
                                             <section class="animate space-y-6">
-                                                <h5 class="font-semibold text-black dark:text-white">
+                                                <h5 class="text-black dark:text-white">
                                                     {monthName}
+                                                    <span class="text-stone-700 dark:text-stone-400 font-regular">
+                                                        ({posts[year][monthNum].length} posts)
+                                                    </span>
                                                 </h5>
                                                 <ul class="flex flex-col gap-4">
                                                     {posts[year][monthNum].map(
