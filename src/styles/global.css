@@ -47,7 +47,7 @@ article {
 
 @layer utilities {
   article a {
-    @apply font-sans text-current underline underline-offset-2;
+    @apply font-sans text-current border-b border-b-stone-400;
     @apply decoration-black/15 dark:decoration-white/30;
     @apply transition-colors duration-300 ease-in-out;
   }
