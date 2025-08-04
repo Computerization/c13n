@@ -1,5 +1,5 @@
 ---
-title: "深入浅出"
+title: "基于 eBPF 的高性能网络监控实践"
 author: "杨其臻"
 date: "Jun 29, 2025"
 description: "基于 eBPF 的高性能网络监控实践"

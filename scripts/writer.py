@@ -132,16 +132,18 @@ print(f"      Decided Summary: {summary_result}; time spent {time.time() - start
 
 lines = iter(article.splitlines())
 markdown_file = ""
-author = random.choice(["杨其臻", "杨子凡", "叶家炜", "黄京"])
+author = random.choice(["杨其臻", "杨子凡", "叶家炜", "黄京", "王思成", "黄梓淳", "马浩琨", "杨岢瑞", "李睿远"])
 print(f"        Rolled author: {author}")
 
 for line in lines:
     if line.startswith("# "):
-        title = line[1:].strip().split("：")[0]
+        # Sometimes the LLM does not produce a top-level title
+        # So we simply use the aforementioned topic instead
+        # title = line[1:].strip().split("：")[0]
 
         metadata = "\n".join([
             "---",
-            f'title: "{title}"',
+            f'title: "{topic}"',
             f'author: "{author}"',
             f'date: "{datetime.datetime.now().strftime("%b %d, %Y")}"',
             f'description: "{summary_result}"',

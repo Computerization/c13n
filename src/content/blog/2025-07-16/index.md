@@ -1,5 +1,5 @@
 ---
-title: "引言"
+title: "图数据结构基础与核心操作详解"
 author: "杨子凡"
 date: "Jul 16, 2025"
 description: "图数据结构基础与核心操作详解"
