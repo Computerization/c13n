@@ -17,7 +17,7 @@
     "@astrojs/check": "^0.5.10",
     "@astrojs/mdx": "^2.3.1",
     "@astrojs/rss": "^4.0.11",
-    "@astrojs/sitemap": "^3.3.0",
+    "@astrojs/sitemap": "^3.4.0",
     "@astrojs/tailwind": "^5.1.5",
     "@fontsource/inter": "^5.2.5",
     "@fontsource/lora": "^5.2.5",
@@ -29,12 +29,13 @@
     "eslint": "^8.57.1",
     "eslint-plugin-astro": "^0.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "katex": "^0.16.21",
+    "katex": "^0.16.22",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.8.2"
-  }
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f"
 }

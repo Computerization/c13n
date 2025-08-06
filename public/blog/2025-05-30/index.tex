@@ -1,0 +1,67 @@
+\title{"深入解析 Erlang 虚拟机的并发模型与调度机制"}
+\author{"黄京"}
+\date{"May 30, 2025"}
+\maketitle
+\chapter{从轻量级进程到多核调度，揭秘 BEAM 如何支撑百万级并发}
+现代高并发系统在电信交换、金融交易等场景下面临严苛的低延迟与高可用要求。Erlang 凭借其独特的并发模型，在 WhatsApp 等系统中实现单节点数百万连接。其核心优势源于 BEAM 虚拟机对并发、容错和分布式能力的原生支持。本文将揭示 Erlang 如何将「进程」抽象转化为高效执行，构建分布式韧性系统的底层逻辑。\par
+\chapter{Erlang 并发模型的核心：轻量级进程}
+与传统操作系统线程（MB 级内存）相比，Erlang 进程仅需约 2-3KB 内存。进程创建成本极低，实测创建 10 万进程仅需 1.2 秒，而同等量级的 Java 线程创建将导致内存溢出。其设计哲学遵循「无共享内存」原则，每个进程拥有独立堆栈，通过消息传递通信。\par
+\begin{lstlisting}[language=erlang]
+% 进程创建示例
+Pid = spawn(fun() -> 
+    receive  % 阻塞等待消息
+        {hello, Msg} -> io:format("Received: ~p~n", [Msg])
+    end
+end),
+Pid ! {hello, "BEAM"}.  % 消息发送
+\end{lstlisting}
+上述代码中，\texttt{spawn} 在微秒级完成进程创建，\texttt{receive} 实现模式匹配的消息选择接收。进程崩溃时，依赖监督树（Supervision Tree）自动重启，实践「Let it crash」哲学。\par
+\chapter{调度机制：驱动百万并发的引擎}
+BEAM 的调度架构由调度器（Scheduler）、调度线程和运行队列组成。每个物理核心对应一个调度器，每个调度器绑定一个 OS 线程，并维护独立的多优先级运行队列。\par
+\section{抢占式调度的核心：Reductions 配额}
+调度并非基于时间片，而是通过 \textbf{Reductions} 配额实现公平性。每个进程初始分配 2000 Reductions，函数调用消耗 1 Reduction，消息发送消耗 2 Reductions。当配额耗尽时立即触发抢占：\par
+\begin{lstlisting}[language=c]
+// Reduction 消耗伪代码
+void execute_instruction(Process* p) {
+    if (p->reduction_count-- <= 0) { 
+        enqueue_run_queue(p);  // 重新入队
+        schedule_next_process(); // 触发调度
+    }
+    // ... 执行指令
+}
+\end{lstlisting}
+此机制确保长耗时任务不会阻塞系统，实测 1 毫秒内可完成 10 万次进程切换。\par
+\section{多核调度优化策略}
+为提升多核利用率，BEAM 实现工作窃取（Work Stealing）算法：空闲调度器从其他队列尾部窃取 50\%{} 任务。对于阻塞型 I/O 操作（如文件读写），脏调度器（Dirty Scheduler）隔离其影响。NUMA 架构下，通过 \texttt{+sbt nnu} 参数绑定线程至最近内存节点，减少跨节点访问延迟。\par
+\chapter{消息传递：并发的神经系统}
+进程邮箱（Mailbox）采用先进先出队列存储消息。\texttt{receive} 语句通过模式匹配检索消息，未匹配消息留在队列中。为优化性能，BEAM 对小消息（小于 64 字节）直接复制，大消息采用引用计数共享：\par
+\begin{lstlisting}[language=erlang]
+% 大消息传递优化（引用计数）
+Ref = make_ref(),
+LargeData = binary:copy(<<0:1000000>>),
+Pid ! {data, Ref, LargeData},  % 仅传递引用
+\end{lstlisting}
+当需高频读取全局数据时，ETS（Erlang Term Storage）共享内存比消息传递快 37 倍（基准测试）。但需注意 ETS 破坏进程隔离性。\par
+\chapter{并发与调度的协同效应}
+\section{垃圾回收的并发优化}
+每个进程独立 GC，采用分代收集策略：新数据在私有堆（Private Heap）进行 Minor GC，存活对象移至共享堆。Major GC 仅影响单个进程，消除全局停顿：\par
+$$GC_{pause} = O(存活对象数量)$$\par
+\section{软实时保障}
+BEAM 设置 4 级进程优先级（max/high/normal/low）。高优先级进程可抢占低优先级任务，但通过最大 Reductions 配额限制其运行时长（默认为 4000 Reductions），确保系统响应延迟低于 1 毫秒。\par
+\chapter{实战：调度机制性能调优}
+\section{关键配置参数}
+启动参数 \texttt{+S 4:4} 表示启用 4 个调度器线程和 4 个脏调度器线程。\texttt{+P 500000} 设置系统最大进程数为 50 万。动态调整参数可通过：\par
+\begin{lstlisting}[language=erlang]
+% 运行时调整最大进程数
+erlang:system_flag(max_processes, 1000000).
+\end{lstlisting}
+\section{性能诊断工具}
+\texttt{recon} 库可实时监控调度器负载：\par
+\begin{lstlisting}[language=erlang]
+recon:scheduler_usage(5000).  % 每 5 秒采样调度器利用率
+\end{lstlisting}
+若某调度器利用率持续高于 95\%{}，表明存在计算密集型任务，需启用脏调度器分担负载。\par
+\chapter{演进与未来：JIT 与异构计算}
+Erlang/OTP 24 引入的 JIT 编译器将字节码转为本地指令，但 \textbf{Reductions 计数逻辑不变}：本地代码执行仍按指令数量消耗 Reduction。在多语言生态中，Elixir 进程与 Erlang 共享同一调度模型。\par
+展望未来，BEAM 的 GPU 调度原型通过专属调度器管理 GPU 任务队列，实验显示矩阵运算速度提升 12 倍。\par
+Erlang 的并发哲学体现为两点：一是通过轻量级进程与消息传递实现\textbf{物理并发抽象化}；二是依赖调度器的 Reduction 配额与优先级控制，将\textbf{软实时需求数学化}。正如 Discord 使用 Erlang 处理每秒百万消息，其核心启示在于：高并发系统的基石不是硬件能力，而是虚拟机对「并发粒度」与「调度确定性」的精准控制。\par

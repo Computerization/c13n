@@ -1,0 +1,90 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { createHash } from "node:crypto";
+
+interface Props {
+  id: number;
+  pdf: string;
+  posts: CollectionEntry<"blog">[];
+  hash: string;
+}
+
+const { id, pdf, posts, hash } = Astro.props as Props;
+
+const longHash = createHash("sha256").update(hash).digest("hex");
+
+// generate a near-gray hue derived from the hash so every batch has a slightly
+// different colour. keep saturation low and lightness high
+const hue = (parseInt(longHash.slice(0, 2), 16) / 255) * 360;
+const light = 70 + (parseInt(longHash.slice(2, 4), 16) % 10);
+const color = `hsl(${hue.toFixed(0)}, 50%, ${light}%)`;
+const pixelWidth = parseInt(longHash[4], 16) + 18;
+
+const width = Math.ceil(350 / pixelWidth);
+const height = Math.ceil(200 / pixelWidth);
+const coords: { x: number; y: number }[] = [];
+let i = 0;
+for (let y = 0; y < height; y++) {
+  for (let x = 0; x < width; x++, i++) {
+    if (parseInt(longHash[i % longHash.length], 16) % 3 === 0) {
+      coords.push({ x, y });
+    }
+  }
+}
+
+const date = new Date(posts[posts.length - 1]?.data.date);
+date.setDate(date.getDate() + parseInt(longHash[5], 16) % 3);
+const dateStr = date
+  ? date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+  : "";
+const info = `${dateStr} - ${hash}`;
+---
+<a
+  href={pdf}
+  target="_blank"
+  rel="noopener noreferrer"
+  class="group relative block overflow-hidden rounded-lg border border-black/15 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300 ease-in-out">
+  <div class="relative w-full h-48 bg-black/5 dark:invert">
+    <svg
+      viewBox={`0 0 ${width * pixelWidth} ${height * pixelWidth}`}
+      preserveAspectRatio="xMidYMid slice"
+      class="w-full h-full opacity-50"
+    >
+      {coords.map(({ x, y }) => (
+        <rect x={x * pixelWidth} y={y * pixelWidth} width={pixelWidth} height={pixelWidth} fill={color} />
+      ))}
+    </svg>
+    <div class="absolute inset-0 flex flex-col items-center justify-center font-mono text-black text-center">
+      <div class="font-bold text-3xl sm:text-4xl mb-1">c13n #{id}</div>
+      <div class="text-xs sm:text-sm">{info}</div>
+    </div>
+  </div>
+  <div class="absolute top-2 right-3 flex items-center gap-1 opacity-80">
+    <span>PDF</span>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="inline-block size-4"
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  </div>
+  <div class="p-4 space-y-2">
+    <ul class="text-sm list-disc list-inside space-y-0.5">
+      {posts.map((p) => (
+        <li>{p.data.title}</li>
+      ))}
+    </ul>
+  </div>
+</a>

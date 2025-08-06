@@ -1,0 +1,66 @@
+\title{"使用 SQLite JavaScript 扩展实现自定义数据库函数"}
+\author{"杨子凡"}
+\date{"May 22, 2025"}
+\maketitle
+在数据处理领域，SQLite 因其轻量级和易嵌入特性广受开发者青睐。然而原生 SQL 的局限性常迫使开发者将复杂逻辑上移到应用层，导致频繁的数据库交互与性能损耗。自定义数据库函数应运而生，它允许将 JavaScript 的逻辑直接嵌入 SQL 查询中，既能扩展 SQL 功能，又能减少数据传输开销。\par
+SQLite JavaScript 扩展尤其适用于需要快速迭代的原型开发场景。例如在浏览器端使用 WebAssembly 版本的 SQLite 时，开发者可以直接调用 JavaScript 生态中的工具库，实现跨环境一致的业务逻辑。这种「一次编写，随处运行」的特性，使其成为轻量级本地数据库的首选方案。\par
+\chapter{SQLite 扩展机制基础}
+SQLite 支持通过 C/C++、Python 等多种语言编写扩展，但 JavaScript 方案凭借其跨平台能力脱颖而出。其核心原理是通过 \verb!sqlite3_create_function! API 将自定义函数注册到数据库连接中。注册时需指定函数名、参数个数及确定性标记（\verb!deterministic!），后者能帮助 SQLite 优化查询计划。\par
+生命周期管理是关键细节。JavaScript 函数的上下文与数据库连接绑定，这意味着在内存数据库关闭后，相关函数将自动销毁。参数传递支持文本、数值、BLOB 及 NULL 值，返回值则通过隐式类型转换映射到 SQL 数据类型。例如返回一个 JavaScript 对象时，SQLite 会尝试调用其 \verb!toString()! 方法进行序列化。\par
+\chapter{环境搭建与工具链}
+在 Node.js 环境中，可通过 \verb!npm install sqlite3! 安装支持自定义函数的驱动库。若需要独立编译 SQLite 二进制文件，需在编译时加入 \verb!-DSQLITE_ENABLE_LOADABLE_EXTENSION! 标志并链接 JavaScript 引擎（如 QuickJS）。\par
+浏览器端推荐使用 SQL.js 库，它通过 Emscripten 将 SQLite 编译为 WebAssembly，并暴露 \verb!sql.js! 对象供注册函数。调试时可利用 Chrome DevTools 的 Sources 面板跟踪 SQL 到 JavaScript 的调用栈。对于性能敏感的场景，\verb!better-sqlite3! 库的同步 API 能减少异步开销。\par
+\chapter{实现自定义函数}
+一个基础的自定义函数包含输入参数处理和返回值定义。以下是一个为文本添加后缀的同步函数示例：\par
+\begin{lstlisting}[language=javascript]
+function addSuffix(text, suffix) {
+  if (text === null) return null;
+  return `${text}${suffix}`;
+}
+\end{lstlisting}
+在 Node.js 中注册该函数时，需通过 \verb!db.function! 方法声明其确定性：\par
+\begin{lstlisting}[language=javascript]
+const db = require('better-sqlite3')(':memory:');
+db.function('add_suffix', { deterministic: true }, (text, suffix) => {
+  return text ? text + suffix : null;
+});
+\end{lstlisting}
+此处 \verb!deterministic: true! 标记告知 SQLite 该函数在相同输入下始终返回相同结果，允许引擎缓存结果以优化查询。参数 \verb!text! 和 \verb!suffix! 直接从 SQL 表达式传入，若任一参数为 NULL，JavaScript 将接收到 \verb!null! 值。\par
+\chapter{实战案例}
+\textbf{数据清洗函数} 是典型应用场景。假设需对用户手机号进行脱敏处理，可通过正则表达式实现：\par
+\begin{lstlisting}[language=javascript]
+db.function('mask_phone', { deterministic: true }, (phone) => {
+  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+});
+\end{lstlisting}
+在 SQL 中调用 \verb!SELECT mask_phone('13812345678')! 将返回 \verb!138****5678!。此函数在数据集更新时自动生效，无需修改应用层代码。\par
+对于\textbf{分位数计算}等复杂统计需求，可扩展 SQL 的聚合函数：\par
+\begin{lstlisting}[language=javascript]
+db.aggregate('quantile', {
+  start: () => [],
+  step: (ctx, value) => { ctx.push(value) },
+  result: (ctx) => {
+    const sorted = ctx.sort((a, b) => a - b);
+    const index = Math.floor(sorted.length * 0.75);
+    return sorted[index];
+  }
+});
+\end{lstlisting}
+此聚合函数在每次 \verb!step! 调用时收集数据，最终在 \verb!result! 阶段计算 75 分位数。通过 \verb!SELECT quantile(salary) FROM employees! 可快速获得统计结果。\par
+\chapter{高级技巧与优化}
+性能优化的关键在于减少类型转换开销。例如处理大型 BLOB 数据时，优先使用 \verb!Buffer! 类型而非字符串，可降低内存复制成本。对于数学计算密集型函数，启用 \verb!deterministic! 标记可使 SQLite 跳过重复计算。\par
+安全性方面，需防范 SQL 注入风险。任何时候都不应将未经校验的 SQL 参数直接传递给 \verb!eval()! 等动态执行函数。在浏览器环境中，还需通过沙箱机制限制对 \verb!localStorage! 或 \verb!fetch! 的访问权限。\par
+调试时可借助 SQLite 的 \verb!.trace! 命令追踪函数调用：\par
+\begin{lstlisting}[language=sql]
+.trace 'console.log("CALL", $1, $2)'
+SELECT add_suffix('test', '-demo');
+\end{lstlisting}
+这将输出函数调用时的参数详情，帮助定位类型转换错误。\par
+\chapter{局限性与其他方案对比}
+JavaScript 扩展的主要瓶颈在于性能。当单次查询调用函数超过 10\^{}4 次时，解释执行的开销可能达到毫秒级。此时可考虑换用 C 扩展或 WebAssembly 模块，后者通过 LLVM 优化能获得接近原生的速度。\par
+在多线程场景下，JavaScript 的单线程模型可能成为并发瓶颈。此时需结合 SQLite 的「写时复制」模式，或通过 Worker 线程隔离计算任务。\par
+SQLite JavaScript 扩展在开发效率与功能灵活性之间取得了巧妙平衡。尽管存在性能局限，但其降低的认知成本与跨平台能力，使其成为原型开发和小型应用的首选方案。随着 WebAssembly 接口的标准化，未来我们有望在浏览器中直接调用 WASI 模块，进一步模糊本地与远程数据库的边界。\par
+\chapter{附录}
+代码示例可在 \href{https://github.com/sqlite-js/examples}{GitHub 仓库} 获取。扩展阅读推荐《SQLite 内核架构解析》一书，深入了解虚拟表与扩展机制。对于 Rust 开发者，\verb!rusqlite! 库提供了更安全的扩展开发接口。\par
+\chapter{互动环节}
+你是否在项目中实现过有趣的 SQLite 函数？欢迎在评论区分享你的案例。遇到部署问题也可留言，笔者将提供针对性调试建议。\par

@@ -17,3 +17,8 @@ export const BLOG: Metadata = {
   TITLE: "Blog",
   DESCRIPTION: "A collection of articles on computer science and technology.",
 };
+
+export const BATCH: Metadata = {
+  TITLE: "Compilations",
+  DESCRIPTION: "Download compiled newsletters in PDF batches.",
+};

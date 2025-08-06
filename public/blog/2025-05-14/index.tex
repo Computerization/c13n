@@ -1,0 +1,138 @@
+\title{"基于 CUDA 的并行计算优化技术与实践"}
+\author{"叶家炜"}
+\date{"May 14, 2025"}
+\maketitle
+并行计算已成为现代高性能计算的核心驱动力，而 CUDA 作为 NVIDIA 推出的异构计算平台，凭借其灵活的编程模型和强大的硬件生态，在科学计算、深度学习等领域占据主导地位。然而，GPU 的显存带宽、计算单元等资源存在物理限制，开发者常面临内存访问低效、分支预测失效等性能瓶颈。本文将从 CUDA 架构特性出发，深入探讨优化技术的底层原理与实践方法，并结合实际案例展示如何通过系统化手段释放 GPU 的极致性能。\par
+\chapter{CUDA 基础回顾}
+GPU 架构以流多处理器（SM）为执行单元，每个 SM 包含多个 CUDA Core 和共享内存资源。线程组织采用「Grid → Block → Warp → Thread」的层级结构，其中 Warp 作为 32 线程的调度单元，其执行效率直接影响程序性能。CUDA 的内存层次包含全局内存、共享内存、寄存器等多个层级，以寄存器访问延迟最低（约 1 周期），全局内存延迟最高（约 200 周期）。理解这些特性是优化工作的基础。\par
+\chapter{CUDA 性能优化核心技术}
+\section{内存访问优化}
+全局内存的合并访问（Coalesced Memory Access）是优化重点。当线程束（Warp）中的线程访问连续内存地址时，GPU 可将多个访问合并为单个事务。以下代码展示了未优化与优化后的内存访问模式对比：\par
+\begin{lstlisting}[language=cpp]
+// 未优化：跨步访问导致内存事务分裂
+__global__ void copyStrided(float* dst, float* src, int stride) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    dst[idx * stride] = src[idx * stride];
+}
+
+// 优化：连续访问实现合并
+__global__ void copyCoalesced(float* dst, float* src) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    dst[idx] = src[idx];
+}
+\end{lstlisting}
+在共享内存应用中，Bank Conflict 是常见问题。假设共享内存划分为 32 个 Bank，当同一 Warp 内的多个线程访问同一 Bank 的不同地址时，会导致串行化访问。通过调整数据偏移量或改变访问模式可避免此问题，例如在矩阵转置中将行优先访问改为列优先。\par
+\section{计算资源优化}
+Warp Divergence 由条件分支引发，导致同一 Warp 内线程执行不同代码路径。优化策略包括重构分支逻辑或使用掩码操作。例如，将以下条件判断：\par
+\begin{lstlisting}[language=cpp]
+if (threadIdx.x % 2 == 0) {
+    // 分支 A
+} else {
+    // 分支 B
+}
+\end{lstlisting}
+重构为基于奇偶线程 ID 的并行计算，可减少 Divergence。此外，Warp Shuffle 指令允许线程直接交换寄存器数据，避免通过共享内存中转。以下代码演示使用 \verb!__shfl_xor_sync! 实现规约操作：\par
+\begin{lstlisting}[language=cpp]
+int val = data[threadIdx.x];
+for (int offset = 16; offset > 0; offset /= 2)
+    val += __shfl_xor_sync(0xffffffff, val, offset);
+\end{lstlisting}
+\section{指令级优化}
+单精度浮点（FP32）运算吞吐量通常是双精度（FP64）的 32 倍，因此在精度允许时应优先使用 FP32。CUDA 提供 \verb!__expf!、\verb!__sinf! 等内置函数，其速度比标准库函数快 2-5 倍。原子操作虽能保证数据一致性，但频繁使用会导致性能下降。可通过线程块内局部归约后再全局累加的方式优化：\par
+\begin{lstlisting}[language=cpp]
+__shared__ float local_sum[256];
+local_sum[threadIdx.x] = partial_sum;
+__syncthreads();
+
+// 块内归约
+for (int stride = blockDim.x/2; stride > 0; stride >>= 1) {
+    if (threadIdx.x < stride)
+        local_sum[threadIdx.x] += local_sum[threadIdx.x + stride];
+    __syncthreads();
+}
+
+if (threadIdx.x == 0)
+    atomicAdd(global_sum, local_sum[0]);
+\end{lstlisting}
+\chapter{实践案例解析}
+\section{矩阵乘法优化}
+从基础实现到优化版本的演进体现了内存层级利用的重要性。初始版本直接访问全局内存：\par
+\begin{lstlisting}[language=cpp]
+__global__ void matmul_naive(float* C, float* A, float* B, int N) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    float sum = 0.0f;
+    for (int k = 0; k < N; k++)
+        sum += A[row*N + k] * B[k*N + col];
+    C[row*N + col] = sum;
+}
+\end{lstlisting}
+此版本计算访存比为 1:2（每 2 次内存访问执行 1 次乘加），性能受限于内存带宽。引入共享内存分块（Tiling）后，每个线程块将数据块加载到共享内存：\par
+\begin{lstlisting}[language=cpp]
+__global__ void matmul_tiled(float* C, float* A, float* B, int N) {
+    __shared__ float As[TILE][TILE];
+    __shared__ float Bs[TILE][TILE];
+    int bx = blockIdx.x, by = blockIdx.y;
+    int tx = threadIdx.x, ty = threadIdx.y;
+    
+    float sum = 0.0f;
+    for (int t = 0; t < N/TILE; t++) {
+        As[ty][tx] = A[(by*TILE + ty)*N + (t*TILE + tx)];
+        Bs[ty][tx] = B[(t*TILE + ty)*N + (bx*TILE + tx)];
+        __syncthreads();
+        
+        for (int k = 0; k < TILE; k++)
+            sum += As[ty][k] * Bs[k][tx];
+        __syncthreads();
+    }
+    C[(by*TILE + ty)*N + (bx*TILE + tx)] = sum;
+}
+\end{lstlisting}
+优化后计算访存比提升至 TILE:2，当 TILE=32 时理论提升 16 倍。进一步结合寄存器展开循环和双缓冲技术可逼近 cuBLAS 性能。\par
+\section{图像处理优化}
+高斯滤波的卷积操作可通过常量内存存储滤波器系数，共享内存缓存图像块。处理边界条件时，使用镜像填充或扩展线程块范围：\par
+\begin{lstlisting}[language=cpp]
+__constant__ float gaussian_kernel[KERNEL_SIZE];
+
+__global__ void gaussian_filter(unsigned char* output, const unsigned char* input, 
+                               int width, int height) {
+    __shared__ unsigned char smem[BLOCK_SIZE + 2*R][BLOCK_SIZE + 2*R];
+    int x = blockIdx.x * blockDim.x + threadIdx.x - R;
+    int y = blockIdx.y * blockDim.y + threadIdx.y - R;
+    
+    // 加载扩展区域到共享内存
+    if (x >= 0 && x < width && y >= 0 && y < height)
+        smem[threadIdx.y][threadIdx.x] = input[y*width + x];
+    __syncthreads();
+    
+    // 仅内部线程计算结果
+    if (threadIdx.x >= R && threadIdx.x < BLOCK_SIZE+R && 
+        threadIdx.y >= R && threadIdx.y < BLOCK_SIZE+R) {
+        float sum = 0.0f;
+        for (int dy = -R; dy <= R; dy++)
+            for (int dx = -R; dx <= R; dx++)
+                sum += gaussian_kernel[(dy+R)*KERNEL_SIZE + (dx+R)] * 
+                       smem[threadIdx.y + dy][threadIdx.x + dx];
+        output[(blockIdx.y*BLOCK_SIZE + threadIdx.y - R)*width + 
+              (blockIdx.x*BLOCK_SIZE + threadIdx.x - R)] = (unsigned char)sum;
+    }
+}
+\end{lstlisting}
+\section{深度学习推理优化}
+在卷积层中应用 Winograd 算法可将计算复杂度从 $O(n^2)$ 降至 $O(n^{1.58})$。核融合技术将多个操作合并为一个 Kernel，减少中间结果存储。以下伪代码展示 ReLU 与卷积的融合：\par
+\begin{lstlisting}[language=cpp]
+__global__ void fused_conv_relu(float* output, const float* input, 
+                               const float* weights, int N) {
+    // 执行卷积计算
+    float conv_result = ...;
+    // 直接应用 ReLU 激活
+    output[idx] = fmaxf(conv_result, 0.0f);
+}
+\end{lstlisting}
+\chapter{调试与性能分析工具}
+Nsight Systems 提供时间线视图帮助识别 Kernel 执行间隔，分析数据传输与计算的重叠情况。nvprof 的关键指标如 Occupancy 反映 SM 利用率，可通过以下公式计算理论 Occupancy：\par
+$$ \text{Occupancy} = \frac{\text{Active Warps per SM}}{\text{Maximum Warps per SM}} $$\par
+当 Occupancy 低于 50\%{} 时，应考虑调整 Block 大小或减少寄存器使用量。\par
+\chapter{未来趋势与挑战}
+随着 Hopper 架构引入 DPX 指令集，动态编程算法的加速能力将显著提升。SYCL 等开放标准试图构建跨厂商生态，但 CUDA 在工具链成熟度上仍保持优势。科学计算与 AI 的融合催生混合精度算法的普及，Tensor Core 对 FP8 格式的支持将进一步优化能效比。\par
+CUDA 优化的本质在于充分挖掘硬件潜力：通过内存访问模式优化减少延迟，利用 Warp 特性提高并行度，合理分配计算资源避免争用。开发者应遵循「先保证正确性，再渐进优化」的原则，结合性能分析工具定位瓶颈。建议定期查阅 CUDA C++ Programming Guide，并参考 NVIDIA/cutlass 等开源库的实现。\par
