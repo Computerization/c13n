@@ -46,7 +46,8 @@ def grok_generate(context, provider, model): #for xai
         model=model,
         messages=context,
     )
-    return chat.sample()
+    response = chat.sample()
+    return response.content.strip()
 
 def scrape_website(url, css_selector):
     response = requests.get(url)
