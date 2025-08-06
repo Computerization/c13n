@@ -14,11 +14,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Python Dependencies
-        run: pip install openai bs4 requests pyyaml
+        run: pip install openai bs4 requests pyyaml xai_sdk
 
       - name: Compose New Article
         env:
           DS_APIKEY: ${{ secrets.DS_APIKEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
         run: python3 scripts/writer.py
 
       - name: Commit and Push Changes
