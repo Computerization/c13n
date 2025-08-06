@@ -46,7 +46,8 @@ def grok_generate(context, provider, model): #for xai
         model=model,
         messages=context,
     )
-    return chat.sample()
+    response = chat.sample()
+    return response.content.strip()
 
 def scrape_website(url, css_selector):
     response = requests.get(url)
@@ -89,45 +90,45 @@ print(f"              Scraped: {len(topics)} topics")
 
 def extract_topic(topics):
     global deepseek, existing_posts_text
-    # return generate([
-    #     {"role": "system", "content": "你在为一篇技术博客确定一个主题。直接用中文输出主题。"},
-    #     {"role": "user", "content": f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n以下是已有的博客文章，请避免选择相似的主题：\n{existing_posts_text}\n\n只需要一个主题，直接输出。"},
-    # ], deepseek, "deepseek-chat")
-    return grok_generate([
-        system("你在为一篇技术博客确定一个主题。直接用中文输出主题。"),
-        user(f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n以下是已有的博客文章，请避免选择相似的主题：\n{existing_posts_text}\n\n只需要一个主题，直接输出。")
-    ], xai_client, "grok-3-mini")
+    return generate([
+        {"role": "system", "content": "你在为一篇技术博客确定一个主题。直接用中文输出主题。"},
+        {"role": "user", "content": f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n以下是已有的博客文章，请避免选择相似的主题：\n{existing_posts_text}\n\n只需要一个主题，直接输出。"},
+    ], deepseek, "deepseek-chat")
+    # return grok_generate([
+    #     system("你在为一篇技术博客确定一个主题。直接用中文输出主题。"),
+    #     user(f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n以下是已有的博客文章，请避免选择相似的主题：\n{existing_posts_text}\n\n只需要一个主题，直接输出。")
+    # ], xai_client, "grok-3-mini")
 
 def outline(topic):
     global deepseek
-    # return generate([
-    #     {"role": "user", "content": f"我要写一篇关于「{topic}」的博客文章。帮我列一个详细的文章提纲。"}
-    # ], deepseek, "deepseek-reasoner")
-    return grok_generate([
-        user(f"我要写一篇关于「{topic}」的博客文章。帮我列一个详细的文章提纲。")
-    ], xai_client, "grok-3-mini")
+    return generate([
+        {"role": "user", "content": f"我要写一篇关于「{topic}」的博客文章。帮我列一个详细的文章提纲。"}
+    ], deepseek, "deepseek-reasoner")
+    # return grok_generate([
+    #     user(f"我要写一篇关于「{topic}」的博客文章。帮我列一个详细的文章提纲。")
+    # ], xai_client, "grok-3-mini")
 
 def write_from_outline(outline):
     global deepseek, existing_posts_text
-    # return generate([
-    #     {"role": "system", "content": "你是一位专业技术博客作者。在写作时请遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符；使用直角引号「」。"},
-    #     {"role": "user", "content": f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，不能使用任何列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\\infty$ 1和($\\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。请遵循中文排版规范，使用正确的标点符号。直接输出正文。"}
-    # ], deepseek, "deepseek-reasoner")
-    return grok_generate([
-        system("你是一位专业技术博客作者。在写作时请遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符；使用直角引号「」。"),
-        user(f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，不能使用任何列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\\infty$ 1和($\\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。请遵循中文排版规范，使用正确的标点符号。直接输出正文。")
-    ], xai_client, "grok-3-mini")
+    return generate([
+        {"role": "system", "content": "你是一位专业技术博客作者。在写作时请遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符；使用直角引号「」。"},
+        {"role": "user", "content": f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，不能使用任何列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\\infty$ 1和($\\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。请遵循中文排版规范，使用正确的标点符号。直接输出正文。"}
+    ], deepseek, "deepseek-reasoner")
+    # return grok_generate([
+    #     system("你是一位专业技术博客作者。在写作时请遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符；使用直角引号「」。"),
+    #     user(f"{outline}\n\n根据这个提纲中关于技术知识的部分，写出一篇技术博客文章。文章中避免出现图片，不能使用任何列表。每一段出现的代码都进行较为详细的解读。在讲述内容时尽量使用段落的语言，语言风格可以略偏专业，但保持清晰。使用Markdown（要求符合Common Markdown规范）输出，使用LaTeX公式（注意：数学的开闭定界符前后不能有字母或数字字符。像x$a + b = c$或$a + b = c$1将无法渲染为数学公式（所有$会被渲染为$）；但x $\\infty$ 1和($\\infty$)会正常渲染），标题尽量只用一级标题 `#` 和二级标题 `##`，不要用分割线。请遵循中文排版规范，使用正确的标点符号。直接输出正文。")
+    # ], xai_client, "grok-3-mini")
 
 def summary(article):
     global deepseek
-    # return generate([
-    #     {"role": "system", "content": "你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符。注意简介被作为副标题使用，不是一句句子，不要以句号结尾。"},
-    #     {"role": "user", "content": f"给这篇文章写一个15字的简短介绍：\n\n{article}"}
-    # ], deepseek, "deepseek-chat")
-    return grok_generate([
-        system("你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符。注意简介被作为副标题使用，不是一句句子，不要以句号结尾。"),
-        user(f"给这篇文章写一个15字的简短介绍：\n\n{article}")
-    ], xai_client, "grok-3-mini")
+    return generate([
+        {"role": "system", "content": "你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符。注意简介被作为副标题使用，不是一句句子，不要以句号结尾。"},
+        {"role": "user", "content": f"给这篇文章写一个15字的简短介绍：\n\n{article}"}
+    ], deepseek, "deepseek-chat")
+    # return grok_generate([
+    #     system("你是一个技术博客简介写作者，简介不一定需要涵盖文章的全部内容，能起到一定的提示作用即可。直接输出简介。遵循以下中文排版规范：使用全角中文标点；专有名词大小写正确；英文、数字使用半角字符。注意简介被作为副标题使用，不是一句句子，不要以句号结尾。"),
+    #     user(f"给这篇文章写一个15字的简短介绍：\n\n{article}")
+    # ], xai_client, "grok-3-mini")
 
 # LaTeX error handling 
 def extract_latex_segments(markdown_text: str) -> List[Tuple[str, int, int]]:
@@ -265,14 +266,14 @@ def modify_latex(markdown_text: str, error_report: Dict[Tuple[str,int], List[str
             "\n\n上下文：\n" + context +
             "\n\n请只返回修正后的完整片段，不要添加其它标记。"
         )
-        # fixed = generate([
-        #     {"role":"system","content":"你是 LaTeX 专家，负责修正以下代码："},
-        #     {"role":"user","content":user_msg}
-        # ], deepseek, "deepseek-reasoner").strip()
-        fixed = grok_generate([
-            system("你是 LaTeX 专家，负责修正以下代码："),
-            user(user_msg)
-        ], xai_client, "grok-3-mini").strip()
+        fixed = generate([
+            {"role":"system","content":"你是 LaTeX 专家，负责修正以下代码："},
+            {"role":"user","content":user_msg}
+        ], deepseek, "deepseek-reasoner").strip()
+        # fixed = grok_generate([
+        #     system("你是 LaTeX 专家，负责修正以下代码："),
+        #     user(user_msg)
+        # ], xai_client, "grok-3-mini").strip()
 
         # 去掉```，如果不小心生成了
         if fixed.startswith("```") and fixed.endswith("```"):
