@@ -26,7 +26,7 @@ while OpenList 非空 :
         回溯路径，算法结束
     遍历 N 的每个邻居 M:
         if M 在 ClosedList 中 或 不可通行 : 跳过
-        计算 new_g = g(N) + cost(N → M)
+        计算 new_g = g(N) + cost(N -> M)
         if M 不在 OpenList 或 new_g < 当前 g(M):
             更新 M 的 g, h, f 值
             记录 M 的父节点为 N
