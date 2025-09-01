@@ -498,4 +498,8 @@ int main(int argc, char **argv) {
   parser_flags |= MD_FLAG_UNDERLINE;
   parser_flags |= MD_FLAG_LATEXMATHSPANS;
   process_file(in, out);
+  fflush(out);
+  fclose(out);
+  fclose(in);
+  return 0;
 }
