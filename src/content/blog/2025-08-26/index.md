@@ -67,7 +67,7 @@ def quick_sort(arr, low, high):
 
 \section{优化思路简介}
 
-为提高鲁棒性，几种优化策略常被采用。随机化快速排序通过随机选择基准元素来避免最坏情况，使得算法期望复杂度保持为 $\Theta(n \logn)$。\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n \log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。$\Theta(n\log n)$。三数取中法选择数组头、尾、中间元素的中位数作为基准，进一步减少分区不平衡的概率。对于小数组，快速排序的递归开销可能超过其效率优势，因此当子数组规模较小（如少于 `10` 元素）时，切换至插入排序等简单算法可提升整体性能。
+为提高鲁棒性，几种优化策略常被采用。随机化快速排序通过随机选择基准元素来避免最坏情况，使得算法期望复杂度保持为 $\Theta(n \logn)$。三数取中法选择数组头、尾、中间元素的中位数作为基准，进一步减少分区不平衡的概率。对于小数组，快速排序的递归开销可能超过其效率优势，因此当子数组规模较小（如少于 `10` 元素）时，切换至插入排序等简单算法可提升整体性能。
 
 
 快速排序凭借其分治策略和高效的平均性能，成为排序算法中的佼佼者。核心的分区操作将数组划分为较小和较大的两部分，递归应用后得到有序结果。通过代码实现，我们展示了如何将这一思想转化为实际算法。尽管存在最坏情况，但优化手段能有效应对。鼓励读者亲手实现算法，并通过测试加深理解。进一步学习可探索 Hoare 分区方案或其它高级排序算法。
