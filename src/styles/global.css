@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -45,7 +47,7 @@ article {
 
 @layer utilities {
   article a {
-    @apply font-sans text-current underline underline-offset-2;
+    @apply font-sans text-current border-b border-b-stone-400;
     @apply decoration-black/15 dark:decoration-white/30;
     @apply transition-colors duration-300 ease-in-out;
   }
@@ -70,4 +72,20 @@ html #back-to-top {
 
 html.scrolled #back-to-top {
   @apply opacity-100 pointer-events-auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold;
+}
+
+h3 {
+  @apply text-2xl;
+}
+
+h4 {
+  @apply text-xl;
+}
+
+h5 {
+  @apply text-lg;
 }
