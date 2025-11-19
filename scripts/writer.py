@@ -92,7 +92,7 @@ def extract_topic(topics):
     global deepseek, existing_posts_text
     return generate([
         {"role": "system", "content": "你在为一篇技术博客确定一个主题。直接用中文输出主题。"},
-        {"role": "user", "content": f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n以下是已有的博客文章，请避免选择相似的主题：\n{existing_posts_text}\n\n只需要一个主题，直接输出。"},
+        {"role": "user", "content": f"阅读以下是HackerNews的热门文章，然后写一个可以用于技术博客的主题。这个主题应当是一个通用、普通的技术，不能是一个事件或其它东西。\n\n{topics}\n\n只需要一个主题，直接输出。"},
     ], deepseek, "deepseek-chat")
     # return grok_generate([
     #     system("你在为一篇技术博客确定一个主题。直接用中文输出主题。"),
