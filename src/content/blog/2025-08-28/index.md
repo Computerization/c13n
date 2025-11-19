@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的归并排序（Merge Sort）算法"
+title: "基本的归并排序（Merge Sort）算法"
 author: "杨其臻"
 date: "Aug 29, 2025"
 description: "深入理解归并排序算法实现"

@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 K-d 树数据结构"
+title: "基本的 K-d 树数据结构"
 author: "杨子凡"
 date: "Jul 29, 2025"
 description: "深入解析 K-d 树数据结构与实现"

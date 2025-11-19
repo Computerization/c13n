@@ -1,5 +1,5 @@
 ---
-title: "深入理解 Python 生成器原理与应用"
+title: "Python 生成器原理与应用"
 author: "王思成"
 date: "Oct 03, 2025"
 description: "Python 生成器原理与应用实践"

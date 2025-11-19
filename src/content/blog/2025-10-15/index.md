@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的垃圾回收（Garbage Collection）机制"
+title: "基本的垃圾回收（Garbage Collection）机制"
 author: "李睿远"
 date: "Oct 15, 2025"
 description: "理解垃圾回收机制并实践实现"

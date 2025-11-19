@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的循环队列（Circular Queue）数据结构"
+title: "基本的循环队列（Circular Queue）数据结构"
 author: "马浩琨"
 date: "Sep 13, 2025"
 description: "循环队列实现与空间优化"

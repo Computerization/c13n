@@ -1,5 +1,5 @@
 ---
-title: "深入理解 SQLite 索引的优化原理与实践"
+title: "SQLite 索引的优化原理与实践"
 author: "王思成"
 date: "Sep 29, 2025"
 description: "SQLite 索引优化原理与实践"

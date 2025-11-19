@@ -1,5 +1,5 @@
 ---
-title: "深入理解并查集（Disjoint Set Union）"
+title: "并查集（Disjoint Set Union）"
 author: "叶家炜"
 date: "Jul 15, 2025"
 description: "深入解析并查集原理与双优化策略（路径压缩 + 按秩合并）"

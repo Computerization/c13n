@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的斐波那契堆"
+title: "基本的斐波那契堆"
 author: "杨其臻"
 date: "Jul 21, 2025"
 description: "斐波那契堆原理与实现详解"

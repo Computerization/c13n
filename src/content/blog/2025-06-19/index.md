@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现 Trie 树"
+title: "Trie 树"
 author: "黄京"
 date: "Jun 19, 2025"
 description: "Trie 树的原理与实现：高效字符串存储与检索"

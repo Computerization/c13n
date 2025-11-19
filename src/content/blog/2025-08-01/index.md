@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的图着色（Graph Coloring）算法"
+title: "基本的图着色（Graph Coloring）算法"
 author: "杨其臻"
 date: "Aug 01, 2025"
 description: "探索图着色问题的核心算法与应用"

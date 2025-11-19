@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的异步 I/O 机制"
+title: "基本的异步 I/O 机制"
 author: "黄京"
 date: "Oct 30, 2025"
 description: "异步 I/O 原理与 Reactor 模式实现"
