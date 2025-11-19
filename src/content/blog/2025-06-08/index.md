@@ -1,5 +1,5 @@
 ---
-title: "深入理解基数排序"
+title: "基数排序"
 author: "杨子凡"
 date: "Jun 08, 2025"
 description: "基数排序原理与 Python 实现详解"

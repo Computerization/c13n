@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的垃圾回收（Garbage Collection）机制"
+title: "基本的垃圾回收（Garbage Collection）机制"
 author: "王思成"
 date: "Oct 29, 2025"
 description: "实现标记-清除垃圾回收机制"

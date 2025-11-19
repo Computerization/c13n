@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 B 树数据结构"
+title: "基本的 B 树数据结构"
 author: "杨其臻"
 date: "May 08, 2025"
 description: "B 树原理与 Python 实现详解"

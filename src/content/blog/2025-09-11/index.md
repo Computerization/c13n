@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的栈（Stack）数据结构"
+title: "基本的栈（Stack）数据结构"
 author: "李睿远"
 date: "Sep 11, 2025"
 description: "栈数据结构理论实现与应用"

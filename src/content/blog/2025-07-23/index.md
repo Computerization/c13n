@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的图（Graph）数据结构"
+title: "基本的图（Graph）数据结构"
 author: "杨其臻"
 date: "Jul 23, 2025"
 description: "图数据结构从理论到代码实践详解"

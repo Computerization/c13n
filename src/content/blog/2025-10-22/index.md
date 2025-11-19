@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的哈希表数据结构"
+title: "基本的哈希表数据结构"
 author: "黄梓淳"
 date: "Oct 22, 2025"
 description: "哈希表原理与 Python 实现"

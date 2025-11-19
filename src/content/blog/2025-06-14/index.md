@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 AVL 树数据结构"
+title: "基本的 AVL 树数据结构"
 author: "杨子凡"
 date: "Jun 14, 2025"
 description: "深入解析 AVL 树原理与实现"

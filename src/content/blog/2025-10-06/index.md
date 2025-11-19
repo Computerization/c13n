@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 XMPP 协议服务器"
+title: "基本的 XMPP 协议服务器"
 author: "黄梓淳"
 date: "Oct 06, 2025"
 description: "深入理解并实现 XMPP 服务器"

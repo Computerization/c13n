@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 HTTP/3 协议核心机制"
+title: "基本的 HTTP/3 协议核心机制"
 author: "马浩琨"
 date: "Sep 27, 2025"
 description: "深入解析 HTTP/3 核心机制与实现"

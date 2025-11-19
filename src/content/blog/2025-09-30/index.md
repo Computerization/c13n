@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的霍夫曼编码（Huffman Coding）算法"
+title: "基本的霍夫曼编码（Huffman Coding）算法"
 author: "黄梓淳"
 date: "Sep 30, 2025"
 description: "深入理解霍夫曼编码算法"

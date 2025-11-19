@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的二叉平衡树（Balanced Binary Tree）数据结构"
+title: "基本的二叉平衡树（Balanced Binary Tree）数据结构"
 author: "叶家炜"
 date: "Jul 28, 2025"
 description: "深入解析 AVL 树的实现原理与旋转操作"

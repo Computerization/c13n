@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 IPv6 协议栈"
+title: "基本的 IPv6 协议栈"
 author: "李睿远"
 date: "Oct 16, 2025"
 description: "从数据包结构到代码实现"

@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的计数排序（Counting Sort）算法"
+title: "基本的计数排序（Counting Sort）算法"
 author: "马浩琨"
 date: "Aug 15, 2025"
 description: "探索计数排序原理与实现"

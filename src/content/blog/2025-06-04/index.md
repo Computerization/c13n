@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的布隆过滤器(Bloom Filter)数据结构"
+title: "基本的布隆过滤器(Bloom Filter)数据结构"
 author: "叶家炜"
 date: "Jun 04, 2025"
 description: "深入解析布隆过滤器原理与实现"

@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现二叉堆（Binary Heap）—— 优先队列的核心引擎"
+title: "二叉堆（Binary Heap）—— 优先队列的核心引擎"
 author: "黄京"
 date: "Jul 14, 2025"
 description: "深入解析二叉堆原理与 Python 实现"

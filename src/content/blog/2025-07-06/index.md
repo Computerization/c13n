@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的线段树（Segment Tree）数据结构"
+title: "基本的线段树（Segment Tree）数据结构"
 author: "黄京"
 date: "Jul 06, 2025"
 description: "深入解析线段树数据结构原理与实现"

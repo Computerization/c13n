@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现二叉搜索树（Binary Search Tree）—— 从理论到代码实践"
+title: "二叉搜索树（Binary Search Tree）—— 从理论到代码实践"
 author: "杨子凡"
 date: "Jul 22, 2025"
 description: "深入解析二叉搜索树原理与实现"

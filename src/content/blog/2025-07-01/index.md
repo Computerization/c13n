@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的双端队列（Deque）数据结构"
+title: "基本的双端队列（Deque）数据结构"
 author: "叶家炜"
 date: "Jul 01, 2025"
 description: "深入解析双端队列（Deque）的实现与应用"
