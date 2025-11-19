@@ -1,6 +1,6 @@
-\title{"深入理解并实现基本的双端队列（Deque）数据结构"}
-\author{"叶家炜"}
-\date{"Jul 01, 2025"}
+\title{基本的双端队列（Deque）数据结构}
+\author{叶家炜}
+\date{Jul 01, 2025}
 \maketitle
 双端队列（Deque，全称 Double-Ended Queue）是一种支持在两端高效进行插入和删除操作的线性数据结构。与传统队列严格的 FIFO（先进先出）规则和栈的 LIFO（后进先出）规则不同，Deque 融合了两者的特性，允许开发者根据需求自由选择操作端。这种灵活性使其成为解决特定问题的利器。\par
 为什么需要 Deque？在实际开发中，诸多场景需要两端操作能力。例如实现撤销操作历史记录时，新操作从前端加入而旧操作从后端移除；滑动窗口算法中需要同时维护窗口两端的数据；工作窃取算法和多线程任务调度也依赖双端操作特性。Deque 的核心操作包括 \texttt{addFront}/\texttt{addRear} 插入、\texttt{removeFront}/\texttt{removeRear} 删除以及 \texttt{peekFront}/\texttt{peekRear} 查看操作，这些构成了其基本能力集。\par

@@ -1,10 +1,10 @@
-\title{"深入理解并实现基本的位图（Bitmap）数据结构"}
-\author{"黄京"}
-\date{"Jul 24, 2025"}
+\title{基本的位图（Bitmap）数据结构}
+\author{黄京}
+\date{Jul 24, 2025}
 \maketitle
 位图是一种利用二进制位（bit）存储数据的紧凑数据结构，每个位代表一个简单的二元状态（例如 0 或 1）。这种设计类似于一系列开关，每个开关对应一个元素的存在性或状态。位图的核心价值在于其极致的空间效率：每个元素仅占用 1 bit 存储空间，同时支持 $ O(1) $ 时间复杂度的查询和更新操作。在应用场景中，位图常用于海量数据处理任务，例如用户 ID 去重（避免重复记录）、快速排序（如《编程珠玑》中的经典实现）、布隆过滤器的底层支撑，以及数据库索引优化。与传统结构如哈希表相比，位图在处理密集整数集时展现出显著的空间优势。\par
 \chapter{位图的核心原理}
-位图的底层存储通常采用字节数组（\texttt{byte[]}）作为物理容器，其中每个字节（byte）包含 8 个二进制位（bits）。这种映射关系可表示为 $ 1 \text{ byte} = 8 \text{ bits} $，意味着一个字节能存储 8 个元素的状态。关键计算逻辑涉及索引定位和位操作：对于给定数值 \texttt{num}，其字节位置通过 $ \text{byteIndex} = \text{num} / 8 $ 计算（或用位运算优化为 $ \text{num} >> 3 $）；位偏移则通过 $ \text{bitOffset} = \text{num} \mod 8 $ 确定（或等价于 $ \text{num} \& 0x07 $）。二进制掩码（Bit Mask）用于操作具体位，例如设置位时使用掩码 $ 1 << \text{bitOffset} $，清除位时使用其取反形式 $ \sim(1 << \text{bitOffset}) $。空间复杂度分析显示，存储最大值为 \texttt{max\_{}value} 的数据集仅需 $ \lceil \text{max\_value} / 8 \rceil $ 字节。例如，处理 100 万整数时，位图仅占用约 125KB 内存，远低于传统集合结构。\par
+位图的底层存储通常采用字节数组（\texttt{byte[]}）作为物理容器，其中每个字节（byte）包含 8 个二进制位（bits）。这种映射关系可表示为 $ 1 \text{ byte} = 8 \text{ bits} $，意味着一个字节能存储 8 个元素的状态。关键计算逻辑涉及索引定位和位操作：对于给定数值 \texttt{num}，其字节位置通过 $ \text{byteIndex} = \text{num} / 8 $ 计算（或用位运算优化为 $ \text{num} >> 3 $）；位偏移则通过 $ \text{bitOffset} = \text{num} \mod 8 $ 确定（或等价于 $ \text{num} \& 0x07 $）。二进制掩码（Bit Mask）用于操作具体位，例如设置位时使用掩码 $ 1 << \text{bitOffset} $，清除位时使用其取反形式 $ \sim(1 << \text{bitOffset}) $。空间复杂度分析显示，存储最大值为 \texttt{max\_{}value} 的数据集仅需 $ \lceil \text{max\textbackslash{}\_value} / 8 \rceil $ 字节。例如，处理 100 万整数时，位图仅占用约 125KB 内存，远低于传统集合结构。\par
 \chapter{位图的实现（代码实战）}
 以下使用 Python 实现一个基础位图类。代码采用 \texttt{bytearray} 作为底层存储，初始化时根据最大数值分配空间。每个方法均涉及位运算，需详细解读其逻辑。\par
 \begin{lstlisting}[language=python]

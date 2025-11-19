@@ -1,6 +1,6 @@
-\title{"深入理解词嵌入技术原理与应用实践"}
-\author{"黄京"}
-\date{"May 12, 2025"}
+\title{词嵌入技术原理与应用实践}
+\author{黄京}
+\date{May 12, 2025}
 \maketitle
 自然语言处理（NLP）的核心挑战在于语言的\textbf{非结构化特性}与\textbf{语义复杂性}。传统方法如独热编码（One-Hot Encoding）和词袋模型（Bag of Words）仅能捕捉表面统计信息，无法处理同义词、一词多义等语义关联。例如，独热编码将每个词映射为高维稀疏向量，导致「猫」与「犬」的向量距离和「猫」与「汽车」的向量距离相同，显然违背语义直觉。\par
 词嵌入（Embeddings）技术通过将词汇映射到\textbf{低维稠密向量空间}，实现了从符号表示到分布式表示的范式跃迁。这一技术革命性地解决了语义相似性与上下文关联性的建模问题。例如，在向量空间中，「国王」-「男性」+「女性」≈「女王」的向量关系，直观展示了词嵌入对语义关系的几何表达。\par
@@ -24,7 +24,7 @@ inputs = tokenizer("bank of the river", return_tensors="pt")
 outputs = model(**inputs)
 word_embeddings = outputs.last_hidden_state
 \end{lstlisting}
-此代码加载预训练 BERT 模型，对句子「bank of the river」进行编码。\verb!last_hidden_state! 输出包含每个 token 的上下文相关向量，其中「bank」的向量会根据「river」的上下文动态调整，从而区别于「bank account」中的「bank」。\par
+此代码加载预训练 BERT 模型，对句子「bank of the river」进行编码。\texttt{last\_{}hidden\_{}state} 输出包含每个 token 的上下文相关向量，其中「bank」的向量会根据「river」的上下文动态调整，从而区别于「bank account」中的「bank」。\par
 \chapter{词嵌入的应用实践}
 \section{基础 NLP 任务}
 在文本分类任务中，可通过简单平均所有词向量得到句子表示，再输入全连接网络进行分类。例如，使用 Gensim 训练 Word2Vec 模型：\par
@@ -34,7 +34,7 @@ sentences = [["自然", "语言", "处理", "是", "人工智能", "的", "核�
 model = Word2Vec(sentences, vector_size=100, window=5, min_count=1, workers=4)
 sentence_vector = np.mean([model.wv[word] for word in ["词嵌入", "技术", "NLP"]], axis=0)
 \end{lstlisting}
-此处 \verb!vector_size! 定义词向量维度，\verb!window! 控制上下文窗口大小。通过 \verb!np.mean! 对词向量取平均，得到句子级表示。\par
+此处 \texttt{vector\_{}size} 定义词向量维度，\texttt{window} 控制上下文窗口大小。通过 \texttt{np.mean} 对词向量取平均，得到句子级表示。\par
 \section{高级应用场景}
 在语义搜索场景中，可通过余弦相似度匹配用户查询与文档向量。例如，将用户查询「智能语音助手」与文档库中的向量进行相似度排序，返回最相关结果。对于跨语言任务，\textbf{Facebook MUSE}项目通过对抗训练对齐不同语言的向量空间，使得「dog」的向量与「犬」的向量在映射后接近。\par
 \section{实战代码示例}
@@ -54,7 +54,7 @@ for i, word in enumerate(words):
     plt.annotate(word, xy=(projections[i, 0], projections[i, 1]))
 plt.show()
 \end{lstlisting}
-此代码将高维词向量投影到二维平面，\verb!n_components=2! 指定输出维度为 2。可视化结果可清晰展示「国王-女王-男人-女人」的性别语义轴与「巴黎-法国」的地理关联。\par
+此代码将高维词向量投影到二维平面，\texttt{n\_{}components=2} 指定输出维度为 2。可视化结果可清晰展示「国王-女王-男人-女人」的性别语义轴与「巴黎-法国」的地理关联。\par
 \chapter{挑战与优化方向}
 静态词嵌入的核心局限在于无法处理\textbf{一词多义}与\textbf{领域迁移}问题。例如，「细胞」在生物学与计算机领域分别指向「生物单元」与「电子元件」。动态嵌入模型如 BERT 虽能缓解此问题，但计算成本较高。优化策略包括\textbf{领域自适应}（Domain Adaptation）：在目标领域数据上微调预训练模型，使其适应特定术语分布。例如，在医疗文本上微调 BERT：\par
 \begin{lstlisting}[language=python]

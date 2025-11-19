@@ -1,6 +1,6 @@
-\title{"深入理解并实现基本的斐波那契堆"}
-\author{"杨其臻"}
-\date{"Jul 21, 2025"}
+\title{基本的斐波那契堆}
+\author{杨其臻}
+\date{Jul 21, 2025}
 \maketitle
 斐波那契堆作为优先队列的高级实现，在图算法优化领域具有里程碑意义。传统二叉堆在合并操作上需要 $O(n)$ 时间，二项堆虽支持 $O(\log n)$ 合并但减键操作仍较昂贵。斐波那契堆通过惰性策略实现了突破性的平摊时间复杂度：插入与合并仅需 $O(1)$，删除最小节点为 $O(\log n)$，而关键的减小键值操作也仅需 $O(1)$。这种特性使其成为 Dijkstra 最短路径算法和 Prim 最小生成树算法等图算法的理想加速器，尤其适用于需要高频动态更新优先级的场景。\par
 \chapter{核心概念与设计思想}
@@ -150,7 +150,7 @@ def consolidate(self):
 斐波那契堆的性能依赖于树的最大度数 $D(n)$ 为 $O(\log n)$。通过斐波那契数性质可证：设 $size(k)$ 为度数为 $k$ 的树的最小节点数，满足递推关系 $size(k) \geq size(k-1) + size(k-2)$（类比斐波那契数列），解此递推得 $size(k) \geq F_{k+2}$（$F$ 为斐波那契数列）。因 $F_k \approx \phi^k / \sqrt{5}$（$\phi$ 为黄金比例），故 $k = O(\log n)$。\par
 \chapter{优化技巧与常见陷阱}
 \section{工程优化实践}
-哈希桶尺寸应动态扩展至 $\lfloor \log_\phi n \rfloor + 1$ 以避免重复分配。内存管理方面，可采用对象池缓存已删除节点，减少内存分配开销。在 \texttt{consolidate} 操作中，预计算最大度数 $D(n) = \lfloor \log_\phi n \rfloor$ 可精确控制桶数组大小。\par
+哈希桶尺寸应动态扩展至 $\lfloor \log _\phi n \rfloor + 1$ 以避免重复分配。内存管理方面，可采用对象池缓存已删除节点，减少内存分配开销。在 \texttt{consolidate} 操作中，预计算最大度数 $D(n) = \lfloor \log _\phi n \rfloor$ 可精确控制桶数组大小。\par
 \section{高频错误防范}
 双向链表操作需严格保证四指针同步更新，典型错误如：\par
 \begin{lstlisting}[language=python]

@@ -1,6 +1,6 @@
-\title{"深入理解并实现基本的跳表（Skip List）数据结构"}
-\author{"叶家炜"}
-\date{"May 13, 2025"}
+\title{基本的跳表（Skip List）数据结构}
+\author{叶家炜}
+\date{May 13, 2025}
 \maketitle
 ——原理、实现与性能分析\par
 在计算机科学中，数据结构的选择往往需要在时间与空间效率之间进行权衡。传统链表虽然插入和删除操作高效，但查询需要 O(n) 的时间复杂度；而平衡二叉搜索树虽能实现 O(\textbackslash{}log n) 的查询效率，却需要复杂的旋转操作维持平衡。跳表（Skip List）作为一种概率型数据结构，通过多层索引机制实现了接近 O(\textbackslash{}log n) 的查询性能，同时保持了实现的简洁性。\par

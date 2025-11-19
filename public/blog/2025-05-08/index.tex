@@ -1,6 +1,6 @@
-\title{"深入理解并实现基本的 B 树数据结构"}
-\author{"杨其臻"}
-\date{"May 08, 2025"}
+\title{基本的 B 树数据结构}
+\author{杨其臻}
+\date{May 08, 2025}
 \maketitle
 在传统二叉搜索树中，每个节点只能存储一个关键字并拥有最多两个子节点。这种结构在内存中表现良好，但面对磁盘存储时，频繁的随机 I/O 会导致性能急剧下降。B 树通过多路平衡的设计，将多个关键字和子节点集中在单个节点中，使得一次磁盘读取可以获取更多有效数据。这种特性使其成为数据库、文件系统等场景的核心数据结构。本文将解析 B 树的核心原理，并基于 Python 实现一个支持插入、删除和查找的 B 树结构。\par
 \chapter{B 树的基础理论}
@@ -34,7 +34,7 @@ def insert(self, key):
         self.root = new_root                # 更新根节点
     self._insert_non_full(self.root, key)
 \end{lstlisting}
-\verb!_split_child! 方法负责分裂子节点：\par
+\texttt{\_{}split\_{}child} 方法负责分裂子节点：\par
 \begin{lstlisting}[language=python]
 def _split_child(self, parent, index):
     child = parent.children[index]
@@ -48,7 +48,7 @@ def _split_child(self, parent, index):
         child.children = child.children[:mid+1]
     parent.children.insert(index+1, new_node)   # 插入新子节点
 \end{lstlisting}
-此代码中，\verb!mid! 变量确定分裂位置，原节点的右半部分被分离为独立节点，中间关键字提升至父节点。\par
+此代码中，\texttt{mid} 变量确定分裂位置，原节点的右半部分被分离为独立节点，中间关键字提升至父节点。\par
 \chapter{代码实现与测试}
 \section{查找方法的实现}
 查找操作通过递归遍历树结构实现：\par

@@ -1,6 +1,6 @@
-\title{"深入理解并实现基本的哈希表数据结构"}
-\author{"杨其臻"}
-\date{"May 03, 2025"}
+\title{基本的哈希表数据结构}
+\author{杨其臻}
+\date{May 03, 2025}
 \maketitle
 在计算机科学中，高效的数据存储与检索始终是核心课题。当面对需要快速查找的场景时，传统数据结构如数组和链表往往显得力不从心——数组通过索引可以实现 $O(1)$ 访问，但难以处理动态键值；链表的顺序查找则需要 $O(n)$ 时间复杂度。哈希表通过将键映射到存储位置的创新设计，在理想情况下实现了接近常数的操作效率，广泛应用于数据库索引、缓存系统和现代编程语言的字典结构中。\par
 \chapter{哈希表的基本原理}
@@ -24,7 +24,7 @@ class HashTable:
         self.load_factor_threshold = 0.75
         self.buckets = [[] for _ in range(capacity)]
 \end{lstlisting}
-初始化时创建指定容量的桶数组，每个桶初始化为空列表。\verb!load_factor_threshold! 用于触发动态扩容，当元素数量与容量的比值（负载因子）超过该阈值时自动扩容。\par
+初始化时创建指定容量的桶数组，每个桶初始化为空列表。\texttt{load\_{}factor\_{}threshold} 用于触发动态扩容，当元素数量与容量的比值（负载因子）超过该阈值时自动扩容。\par
 \textbf{插入操作}需要处理键已存在时的更新逻辑：\par
 \begin{lstlisting}[language=python]
 def insert(self, key, value):
@@ -39,7 +39,7 @@ def insert(self, key, value):
     if self.size / self.capacity > self.load_factor_threshold:
         self._resize()
 \end{lstlisting}
-遍历链表检查键是否存在，若存在则更新值，否则追加新节点。插入后检查负载因子，超过阈值则调用 \verb!_resize! 方法进行扩容。\par
+遍历链表检查键是否存在，若存在则更新值，否则追加新节点。插入后检查负载因子，超过阈值则调用 \texttt{\_{}resize} 方法进行扩容。\par
 \textbf{动态扩容}通过创建新桶数组并重新哈希所有现有元素实现：\par
 \begin{lstlisting}[language=python]
 def _resize(self):
@@ -54,7 +54,7 @@ def _resize(self):
         for key, value in bucket:
             self.insert(key, value)  # 重新插入元素
 \end{lstlisting}
-这里选择双倍扩容策略，重新插入时利用已有的 \verb!insert! 方法简化实现，但实际工程中会直接操作新桶以提高效率。\par
+这里选择双倍扩容策略，重新插入时利用已有的 \texttt{insert} 方法简化实现，但实际工程中会直接操作新桶以提高效率。\par
 \chapter{性能分析与优化}
 在理想情况下（无哈希冲突），哈希表的插入、查找、删除操作时间复杂度均为 $O(1)$。但最坏情况下（所有键哈希冲突），时间复杂度退化为 $O(n)$。性能表现主要取决于两个关键参数：\par
 \begin{itemize}
@@ -64,7 +64,7 @@ def _resize(self):
 
 \item \textbf{哈希函数质量}：衡量指标是产生不同哈希值的分布均匀程度
 \end{itemize}
-与红黑树等平衡二叉树相比，哈希表在随机访问速度上占优，但无法支持范围查询和有序遍历。Java 的 \verb!HashMap! 在链表长度超过阈值（默认为 8）时会将链表转换为红黑树，将最坏情况时间复杂度从 $O(n)$ 优化为 $O(\log n)$。\par
+与红黑树等平衡二叉树相比，哈希表在随机访问速度上占优，但无法支持范围查询和有序遍历。Java 的 \texttt{HashMap} 在链表长度超过阈值（默认为 8）时会将链表转换为红黑树，将最坏情况时间复杂度从 $O(n)$ 优化为 $O(\log n)$。\par
 \chapter{实际应用案例}
 Python 的字典类型是哈希表的经典实现。CPython 采用开放寻址法解决冲突，使用伪随机探测序列寻找空槽位。其设计特点包括：\par
 \begin{enumerate}
