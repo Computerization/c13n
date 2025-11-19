@@ -1,5 +1,5 @@
 ---
-title: "基本的基数树（Radix Tree）数据结构"
+title: "基数树（Radix Tree）数据结构"
 author: "王思成"
 date: "Aug 10, 2025"
 description: "深入解析基数树原理与实现"

@@ -1,5 +1,5 @@
 ---
-title: "基本的信号量（Semaphore）机制"
+title: "信号量（Semaphore）机制"
 author: "李睿远"
 date: "Oct 31, 2025"
 description: "深入信号量原理与代码实现"

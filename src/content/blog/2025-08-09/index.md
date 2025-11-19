@@ -1,5 +1,5 @@
 ---
-title: "基本的红黑树（Red-Black Tree）数据结构"
+title: "红黑树（Red-Black Tree）数据结构"
 author: "杨子凡"
 date: "Aug 09, 2025"
 description: "深入解析红黑树原理与实现"

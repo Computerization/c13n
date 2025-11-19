@@ -1,5 +1,5 @@
 ---
-title: "基本的桶排序（Bucket Sort）算法"
+title: "桶排序（Bucket Sort）算法"
 author: "黄梓淳"
 date: "Sep 03, 2025"
 description: "深入理解桶排序算法原理与实现"

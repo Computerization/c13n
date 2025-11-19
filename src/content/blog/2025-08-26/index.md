@@ -1,5 +1,5 @@
 ---
-title: "基本的快速排序（Quick Sort）算法"
+title: "快速排序（Quick Sort）算法"
 author: "马浩琨"
 date: "Aug 26, 2025"
 description: "快速排序算法原理与实现详解"

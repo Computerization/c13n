@@ -1,5 +1,5 @@
 ---
-title: "基本的 B+ 树数据结构"
+title: "B+ 树数据结构"
 author: "杨其臻"
 date: "Jun 25, 2025"
 description: "B+ 树数据结构详解与代码实现"

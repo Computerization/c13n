@@ -1,5 +1,5 @@
 ---
-title: "基本的后缀树（Suffix Tree）数据结构"
+title: "后缀树（Suffix Tree）数据结构"
 author: "杨子凡"
 date: "Aug 02, 2025"
 description: "深入解析后缀树数据结构及其高效实现"

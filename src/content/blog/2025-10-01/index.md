@@ -1,5 +1,5 @@
 ---
-title: "基本的二分查找（Binary Search）算法"
+title: "二分查找（Binary Search）算法"
 author: "王思成"
 date: "Oct 01, 2025"
 description: "深入解析二分查找算法实现"

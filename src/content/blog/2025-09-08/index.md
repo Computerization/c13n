@@ -1,5 +1,5 @@
 ---
-title: "基本的希尔排序（Shell Sort）算法"
+title: "希尔排序（Shell Sort）算法"
 author: "黄梓淳"
 date: "Sep 08, 2025"
 description: "深入理解希尔排序算法实现"

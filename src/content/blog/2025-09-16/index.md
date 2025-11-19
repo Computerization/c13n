@@ -1,5 +1,5 @@
 ---
-title: "基本的平衡二叉树（Balanced Binary Tree）数据结构"
+title: "平衡二叉树（Balanced Binary Tree）数据结构"
 author: "黄京"
 date: "Sep 16, 2025"
 description: "AVL 树实现与平衡操作详解"

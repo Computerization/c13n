@@ -1,5 +1,5 @@
 ---
-title: "基本的信号量（Semaphore）机制"
+title: "信号量（Semaphore）机制"
 author: "杨岢瑞"
 date: "Nov 02, 2025"
 description: "信号量机制原理与实现"

@@ -1,5 +1,5 @@
 ---
-title: "基本的循环缓冲区（Circular Buffer）数据结构"
+title: "循环缓冲区（Circular Buffer）数据结构"
 author: "王思成"
 date: "Aug 27, 2025"
 description: "循环缓冲区原理与 C 语言实现详解"

@@ -1,5 +1,5 @@
 ---
-title: "基本的 Git 内部机制与核心操作"
+title: "Git 内部机制与核心操作"
 author: "马浩琨"
 date: "Nov 10, 2025"
 description: "深入 Git 内部机制与实现原理"

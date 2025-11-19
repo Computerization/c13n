@@ -1,5 +1,5 @@
 ---
-title: "基本的管道操作符（Pipe Operator）原理与实现"
+title: "管道操作符（Pipe Operator）原理与实现"
 author: "杨岢瑞"
 date: "Oct 12, 2025"
 description: "管道操作符原理与实现解析"

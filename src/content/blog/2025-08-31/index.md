@@ -1,5 +1,5 @@
 ---
-title: "基本的堆排序（Heap Sort）算法"
+title: "堆排序（Heap Sort）算法"
 author: "马浩琨"
 date: "Aug 31, 2025"
 description: "深入理解堆排序算法原理与实现"

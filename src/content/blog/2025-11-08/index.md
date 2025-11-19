@@ -1,5 +1,5 @@
 ---
-title: "基本的 C++ 移动语义（Move Semantics）"
+title: "C++ 移动语义（Move Semantics）"
 author: "黄京"
 date: "Nov 08, 2025"
 description: "C++ 移动语义核心概念与实现"

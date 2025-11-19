@@ -1,5 +1,5 @@
 ---
-title: "基本的管道操作符（Pipe Operator）原理与实现"
+title: "管道操作符（Pipe Operator）原理与实现"
 author: "黄梓淳"
 date: "Oct 08, 2025"
 description: "JavaScript 管道操作符原理与实现"
