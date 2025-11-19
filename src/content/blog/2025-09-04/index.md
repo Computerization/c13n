@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的循环链表（Circular Linked List）数据结构"
+title: "循环链表（Circular Linked List）数据结构"
 author: "黄梓淳"
 date: "Sep 04, 2025"
 description: "深入理解循环链表数据结构"

@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的并查集（Disjoint Set Union）数据结构"
+title: "并查集（Disjoint Set Union）数据结构"
 author: "黄京"
 date: "Jul 25, 2025"
 description: "深入解析并查集原理与优化实现"

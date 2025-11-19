@@ -1,5 +1,5 @@
 ---
-title: "深入理解代数效应（Algebraic Effects）的原理与实现"
+title: "代数效应（Algebraic Effects）的原理与实现"
 author: "黄梓淳"
 date: "Sep 07, 2025"
 description: "深入剖析代数效应的原理与实现方式"

@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的动态脚本执行引擎"
+title: "动态脚本执行引擎"
 author: "王思成"
 date: "Nov 05, 2025"
 description: "从零实现动态脚本引擎"

@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的自动微分（Automatic Differentiation）算法"
+title: "自动微分（Automatic Differentiation）算法"
 author: "杨其臻"
 date: "Sep 18, 2025"
 description: "深入解析自动微分原理与实现"

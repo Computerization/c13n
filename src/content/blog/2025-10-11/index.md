@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的基数排序（Radix Sort）算法"
+title: "基数排序（Radix Sort）算法"
 author: "叶家炜"
 date: "Oct 11, 2025"
 description: "基数排序算法详解与实现"

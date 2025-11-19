@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的队列（Queue）数据结构"
+title: "队列（Queue）数据结构"
 author: "李睿远"
 date: "Nov 07, 2025"
 description: "队列数据结构详解与实现"

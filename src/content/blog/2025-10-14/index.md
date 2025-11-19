@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的模数转换器（ADC）原理与实现"
+title: "模数转换器（ADC）原理与实现"
 author: "黄京"
 date: "Oct 14, 2025"
 description: "深入理解 ADC 原理与实现"

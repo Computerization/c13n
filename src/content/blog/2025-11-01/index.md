@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的哈希表数据结构"
+title: "哈希表数据结构"
 author: "黄京"
 date: "Nov 01, 2025"
 description: "哈希表原理与实现详解"

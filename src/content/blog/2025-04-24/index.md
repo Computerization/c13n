@@ -1,5 +1,5 @@
 ---
-title: "深入理解 SIMD 指令集架构的设计原理与优化实践"
+title: "SIMD 指令集架构的设计原理与优化实践"
 author: "杨子凡"
 date: "Apr 24, 2025"
 description: "探索 SIMD 指令集架构的设计原理与优化技巧"

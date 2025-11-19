@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的链表（Linked List）数据结构"
+title: "链表（Linked List）数据结构"
 author: "叶家炜"
 date: "Sep 09, 2025"
 description: "链表原理与实现详解"

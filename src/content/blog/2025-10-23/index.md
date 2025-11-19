@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 CRDT（无冲突复制数据类型）数据结构"
+title: "CRDT（无冲突复制数据类型）数据结构"
 author: "马浩琨"
 date: "Oct 23, 2025"
 description: "深入解析 CRDT 实现无冲突数据同步"

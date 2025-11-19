@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的布谷鸟哈希（Cuckoo Hashing）数据结构"
+title: "布谷鸟哈希（Cuckoo Hashing）数据结构"
 author: "黄梓淳"
 date: "Aug 12, 2025"
 description: "深入解析布谷鸟哈希原理与实现"

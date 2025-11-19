@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的双向文本（BiDirectional Text）处理机制"
+title: "双向文本（BiDirectional Text）处理机制"
 author: "叶家炜"
 date: "Oct 04, 2025"
 description: "双向文本处理与 Unicode 算法实现"

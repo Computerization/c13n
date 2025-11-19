@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的深度优先搜索（DFS）算法"
+title: "深度优先搜索（DFS）算法"
 author: "杨其臻"
 date: "Oct 28, 2025"
 description: "深度优先搜索算法原理与实现"

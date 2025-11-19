@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的拓扑排序算法"
+title: "拓扑排序算法"
 author: "李睿远"
 date: "Oct 19, 2025"
 description: "拓扑排序算法原理与 Python 实现"

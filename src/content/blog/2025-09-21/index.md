@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 JSON 解析器"
+title: "JSON 解析器"
 author: "黄京"
 date: "Sep 21, 2025"
 description: "手把手实现 JSON 解析器"

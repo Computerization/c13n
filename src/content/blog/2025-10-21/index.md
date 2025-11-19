@@ -1,5 +1,5 @@
 ---
-title: "深入理解并实现基本的 Merkle 树数据结构"
+title: "Merkle 树数据结构"
 author: "王思成"
 date: "Oct 21, 2025"
 description: "Merkle 树原理与 Python 实现"
