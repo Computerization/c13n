@@ -1,5 +1,5 @@
 ---
-title: "基本的位图（Bitmap）数据结构"
+title: "位图（Bitmap）数据结构"
 author: "黄京"
 date: "Jul 24, 2025"
 description: "深入解析位图数据结构原理与实现"

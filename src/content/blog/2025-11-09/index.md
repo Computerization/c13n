@@ -1,5 +1,5 @@
 ---
-title: "基本的 CHIP-8 虚拟机"
+title: "CHIP-8 虚拟机"
 author: "李睿远"
 date: "Nov 09, 2025"
 description: "从零实现 CHIP-8 虚拟机"

@@ -1,5 +1,5 @@
 ---
-title: "基本的优先队列（Priority Queue）数据结构"
+title: "优先队列（Priority Queue）数据结构"
 author: "黄京"
 date: "Jun 23, 2025"
 description: "深入解析优先队列的原理与二叉堆实现"

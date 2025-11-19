@@ -1,5 +1,5 @@
 ---
-title: "基本的冒泡排序（Bubble Sort）算法"
+title: "冒泡排序（Bubble Sort）算法"
 author: "杨其臻"
 date: "Sep 06, 2025"
 description: "深入理解冒泡排序算法"

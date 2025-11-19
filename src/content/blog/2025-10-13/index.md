@@ -1,5 +1,5 @@
 ---
-title: "基本的 JIT 编译器原理与优化"
+title: "JIT 编译器原理与优化"
 author: "杨子凡"
 date: "Oct 13, 2025"
 description: "深入实现 JIT 编译器原理与优化"

@@ -1,5 +1,5 @@
 ---
-title: "基本的哈希表数据结构"
+title: "哈希表数据结构"
 author: "马浩琨"
 date: "Sep 14, 2025"
 description: "哈希表实现与性能分析"

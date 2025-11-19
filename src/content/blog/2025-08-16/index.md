@@ -1,5 +1,5 @@
 ---
-title: "基本的 A*寻路算法"
+title: "A*寻路算法"
 author: "杨其臻"
 date: "Aug 16, 2025"
 description: "深入解析 A* 寻路算法原理与代码实现"

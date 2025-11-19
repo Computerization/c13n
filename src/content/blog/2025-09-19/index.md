@@ -1,5 +1,5 @@
 ---
-title: "基本的蒙特卡洛方法（Monte Carlo Method）"
+title: "蒙特卡洛方法（Monte Carlo Method）"
 author: "杨其臻"
 date: "Sep 19, 2025"
 description: "蒙特卡洛方法理论及 Python 实战"

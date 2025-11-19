@@ -1,5 +1,5 @@
 ---
-title: "基本的异步编程（Async Programming）机制"
+title: "异步编程（Async Programming）机制"
 author: "黄梓淳"
 date: "Nov 12, 2025"
 description: "从异步编程到事件循环实现"

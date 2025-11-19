@@ -1,5 +1,5 @@
 ---
-title: "基本的跳表（Skip List）数据结构"
+title: "跳表（Skip List）数据结构"
 author: "叶家炜"
 date: "May 13, 2025"
 description: "跳表数据结构原理与 Python 实现"
