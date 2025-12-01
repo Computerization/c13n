@@ -145,101 +145,131 @@ def extract_latex_segments(markdown_text: str) -> List[Tuple[str, int, int]]:
 
     return segments
 
+
 def latex_checks(latex_str: str) -> List[str]:
     errors: List[str] = []
+    
+    def get_line_no(index: int) -> int:
+        return latex_str.count('\n', 0, index) + 1
 
-    # 命令后多余空格 (忽略 \tt, \it, \bf)
-    for m in re.finditer(r"\\([a-zA-Z]+)(\s+)", latex_str):
-        cmd = m.group(1)
-        if cmd not in ('tt', 'it', 'bf'):
-            errors.append(f"命令 '\\{cmd}' 后跟有空格，建议去掉空格。")
+    clean_str = list(latex_str)
+    for m in re.finditer(r'\\.', latex_str):
+        clean_str[m.start():m.end()] = list("@@")
 
-    # 引用前多余空格，建议用 '~'
-    if re.search(r"\s+\\ref\{", latex_str):
-        errors.append("'\\ref' 前有空格，应使用 '~\\ref{...}' 保持断开。")
+    verb_pattern = re.compile(r'(\\begin\{verbatim\}.*?\\end\{verbatim\})', re.DOTALL)
+    temp_s = "".join(clean_str) 
+    clean_str = list(latex_str)
+    verb_block = re.compile(r'\\begin\{verbatim\}.*?\\end\{verbatim\}', re.DOTALL)
+    for m in verb_block.finditer(latex_str):
+        length = m.end() - m.start()
+        newlines = latex_str[m.start():m.end()].count('\n')
+        clean_str[m.start():m.end()] = list(' ' * (length - newlines) + '\n' * newlines)
 
-    # 省略号 '...' 而非 \dots 或 \ldots
-    if re.search(r'(?<!\\)(?:\.\.\.|…)', latex_str):
-        errors.append("检测到省略号，建议使用 '\\dots'、'\\cdots' 或 '\\ldots'。")
+    verb_inline = re.compile(r'\\verb(?P<sep>[^a-zA-Z]).*?(?P=sep)')
+    temp_s = "".join(clean_str)
+    for m in verb_inline.finditer(temp_s):
+        length = m.end() - m.start()
+        clean_str[m.start():m.end()] = list(' ' * length)
 
-    # 缩写后不加特殊空格
-    for m in re.finditer(r"\b(e\.g|i\.e|etc)\.(\s+)", latex_str):
-        errors.append(f"缩写 '{m.group(1)}.' 后应使用 '\\ ' 或 '~' 保持空格。")
+    temp_s = "".join(clean_str)
+    for m in re.finditer(r'%.*', temp_s):
+        length = m.end() - m.start()
+        clean_str[m.start():m.end()] = list(' ' * length)
 
-    # 句末大写字母后应有两个空格
-    for m in re.finditer(r"([A-Z])\.(\s)(?=[A-Z])", latex_str):
-        errors.append(f"句子结尾 '{m.group(1)}.' 后只有单个空格，建议使用两个空格。")
+    cleaned_text = "".join(clean_str)
 
-    # 再次检查数学mode的$
-    # 块级
-    block_marks = re.findall(r'\$\$', latex_str)
-    if len(block_marks) % 2 != 0:
-        errors.append("块级数学模式 '$$' 不成对。")
-    # 去掉所有 $$…$$ 段
-    no_block = re.sub(r'\$\$[\s\S]+?\$\$', '', latex_str)
-    # 行内
-    inline_marks = len(re.findall(r'(?<!\\)\$', no_block))
-    if inline_marks % 2 != 0:
-        errors.append("行内数学模式 '$' 不成对。")
+    masked_text = re.sub(r'\\[{}$%&_]', '__', cleaned_text)
 
-    # 引号 `` ''
-    if '"' in latex_str and not re.search(r"``.*?''", latex_str, re.DOTALL):
-        errors.append("检测到直引号 '\"'，建议使用 LaTeX 引号 ``...'' 。")
+    # 引用前空格
+    for m in re.finditer(r'(?<!~)(\s+)\\ref\{', cleaned_text):
+        if '\n' not in m.group(1): 
+            line = get_line_no(m.start())
+            errors.append(f"[Line {line}] '\\ref' 前检测到普通空格，建议使用 '~\\ref{{...}}'。")
 
-    # \label 前空格
-    if re.search(r"\s+\\label\{", latex_str):
-        errors.append("'\\label' 前有空格，应紧贴前文。")
+    # 省略号
+    for m in re.finditer(r'(?<!\.)(\.\.\.|…)(?!\.)', cleaned_text):
+        line = get_line_no(m.start())
+        errors.append(f"[Line {line}] 检测到省略号 '{m.group(1)}'，建议使用 '\\dots'。")
 
-    # \footnote 前空格
-    if re.search(r"\s+\\footnote\{", latex_str):
-        errors.append("'\\footnote' 前有空格，应紧贴前文。")
+    # 缩写空格
+    for m in re.finditer(r"\b(e\.g|i\.e|etc)\.(\s+)", cleaned_text):
+        line = get_line_no(m.start())
+        errors.append(f"[Line {line}] 缩写 '{m.group(1)}.' 后看似是普通空格，建议使用 '\\ ' 或 '~'。")
 
-    # 数学中用 x 而非 \times
-    for m in re.finditer(r"(?<!\\)\b(\d+)\s*x\s*(\d+)\b", latex_str):
-        errors.append(f"'{m.group(1)} x {m.group(2)}' 建议用 '$\\times$'。")
+    # 数学模式 ($$)
+    temp_math = masked_text
+    doubles = list(re.finditer(r'\$\$', temp_math))
+    if len(doubles) % 2 != 0:
+        line = get_line_no(doubles[-1].start())
+        errors.append(f"[Line {line}附近] 块级数学模式 '$$' 数量不匹配。")
+    
+    temp_math = re.sub(r'\$\$[\s\S]*?\$\$', '', temp_math)
+    singles = list(re.finditer(r'(?<!\\)\$', temp_math))
+    if len(singles) % 2 != 0:
+        line = get_line_no(singles[-1].start())
+        errors.append(f"[Line {line}附近] 行内数学模式 '$' 数量不匹配。")
 
-    # 多余连续空格
-    if re.search(r" {2,}", latex_str):
-        errors.append("检测到连续多个空格，可能要删掉")
+    # 直引号
+    if '"' in cleaned_text:
+        for m in re.finditer(r'"', cleaned_text):
+            line = get_line_no(m.start())
+            errors.append(f"[Line {line}] 检测到直引号 '\"'，建议使用 ``...''。")
+
+    # label/footnote 空格
+    for m in re.finditer(r"(\s+)\\(label|footnote)\{", cleaned_text):
+        if '\n' not in m.group(1):
+            line = get_line_no(m.start())
+            errors.append(f"[Line {line}] '\\{m.group(2)}' 前检测到空格。")
+
+    # 乘号 x
+    for m in re.finditer(r"(?<![a-zA-Z])\b(\d+)\s*x\s*(\d+)\b", cleaned_text):
+        line = get_line_no(m.start())
+        errors.append(f"[Line {line}] '{m.group(0)}' 中的 'x' 疑似乘号。")
 
     # 大括号匹配
-    stack: List[int] = []
-    for pos, ch in enumerate(latex_str):
-        if ch == '{':  stack.append(pos)
+    stack_braces = []
+    for pos, ch in enumerate(masked_text):
+        if ch == '{': stack_braces.append(pos)
         elif ch == '}':
-            if not stack:
-                errors.append(f"位置 {pos}: 多余 '}}' 。")
+            if not stack_braces:
+                line = get_line_no(pos)
+                errors.append(f"[Line {line}] 多余的 '}}'。")
             else:
-                stack.pop()
-    for pos in stack:
-        errors.append(f"位置 {pos}: 多余 '{{' 。")
+                stack_braces.pop()
+    if stack_braces:
+        line = get_line_no(stack_braces[0])
+        errors.append(f"[Line {line}] 未闭合的 '{{'。")
 
-    # \begin / \end 匹配（修正 \end raw-string 报错）
-    env_stack: List[Tuple[str, int]] = []
-    for m in re.finditer(r"\\(begin|end)\s*\{([^}]+)\}", latex_str):
+    # Begin/End
+    env_stack = []
+    for m in re.finditer(r"\\(begin|end)\s*\{([^}]+)\}", cleaned_text):
         cmd, env = m.group(1), m.group(2)
-        pos = m.start()
+        line = get_line_no(m.start())
         if cmd == 'begin':
-            env_stack.append((env, pos))
-        else:  # cmd == 'end'
-            if not env_stack or env_stack[-1][0] != env:
-                # 注意这里用双反斜杠来正确表示 '\end'
-                errors.append(f"位置 {pos}: '\\end{{{env}}}' 无匹配或顺序错误。")
+            env_stack.append((env, line))
+        else:
+            if not env_stack:
+                errors.append(f"[Line {line}] 多余 '\\end{{{env}}}'。")
+            elif env_stack[-1][0] != env:
+                errors.append(f"[Line {line}] 环境不匹配：预期 '\\end{{{env_stack[-1][0]}}}'。")
             else:
                 env_stack.pop()
-    # 剩余未闭合的 begin
-    for env, pos in env_stack:
-        errors.append(f"位置 {pos}: '\\begin{{{env}}}' 未关闭。")
+    for env, line in env_stack:
+        errors.append(f"[Line {line}] 环境 '\\begin{{{env}}}' 未闭合。")
 
-    # 括号前多余空格
-    if re.search(r"\s+\(", latex_str):
-        errors.append("左括号 '(' 前有空格，应去除。")
+    # 数学内中文标点
+    for m in re.finditer(r'\$([^$]+)\$', masked_text):
+        if re.search(r'[，。；：！？]', m.group(1)):
+            line = get_line_no(m.start())
+            errors.append(f"[Line {line}] 数学公式中检测到中文标点。")
 
-    # 数学模式中不应有标点
-    for m in re.finditer(r"\$(?:[^$]*?)[.,;:!?]+(?:[^$]*?)\$", latex_str):
-        errors.append("数学模式中包含标点符号，建议放在模式外。")
+    # 中文括号空格
+    for m in re.finditer(r'([\u4e00-\u9fa5])\s+\(', cleaned_text):
+        line = get_line_no(m.start())
+        errors.append(f"[Line {line}] 中文 '{m.group(1)}' 与 '(' 间有多余空格。")
 
     return errors
+
 
 def latex_errors(markdown_text: str) -> Dict[Tuple[str, int], List[str]]:
     report = {}
