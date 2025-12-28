@@ -65,7 +65,7 @@ def metaext(src):
 def sanitize_meta(value: str) -> str:
         """Sanitize a metadata value for safe LaTeX insertion."""
         if value is None:
-        return ""
+                return ""
         
         sanitized = value.strip()
         if sanitized.startswith(('"', "'")) and sanitized.endswith(('"', "'")):
