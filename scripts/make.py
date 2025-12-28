@@ -65,28 +65,28 @@ def metaext(src):
 def sanitize_meta(value: str) -> str:
         """Sanitize a metadata value for safe LaTeX insertion."""
         if value is None:
-                return ""
-
+        return ""
+        
         sanitized = value.strip()
         if sanitized.startswith(('"', "'")) and sanitized.endswith(('"', "'")):
                 sanitized = sanitized[1:-1]
-
+        
         replacements = {
-                "\\": r"\\textbackslash{}",
-                "{": r"\\{",
-                "}": r"\\}",
-                "$": r"\\$",
-                "&": r"\\&",
-                "#": r"\\#",
-                "_": r"\\_",
-                "%": r"\\%",
-                "^": r"\\textasciicircum{}",
-                "~": r"\\textasciitilde{}",
+                "\\": r"\textbackslash{}",
+                "{": r"\{",
+                "}": r"\}",
+                "$": r"\$",
+                "&": r"\&",
+                "#": r"\#",
+                "_": r"\_",
+                "%": r"\%",
+                "^": r"\textasciicircum{}",
+                "~": r"\textasciitilde{}",
         }
-
+        
         for needle, replacement in replacements.items():
                 sanitized = sanitized.replace(needle, replacement)
-
+        
         return sanitized
 
 def metainj(dst):
