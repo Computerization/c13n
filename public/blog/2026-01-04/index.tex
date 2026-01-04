@@ -1,0 +1,132 @@
+\title{神经网络基础：从零到英雄}
+\author{黄梓淳}
+\date{Jan 04, 2026}
+\maketitle
+想象一下，2016 年 3 月 15 日，AlphaGo 以 4:1 的比分击败了世界围棋冠军李世乭，那一刻，人工智能从科幻走入现实。或者想想你手机上的面部解锁功能，它能瞬间识别你的脸庞，这些奇迹都源于神经网络。这篇文章将带你从零基础起步，逐步掌握神经网络的核心原理与实践技巧，最终让你从门外汉变成入门英雄。无论你是大学生、转行者还是自学者，我们无需高等数学背景，只需 Python 基础、线性代数和概率的入门知识。如果你需要复习，可以参考 Khan Academy 的在线课程。文章将从生物灵感出发，逐步深入数学基础、实践构建、优化技巧，直至实际应用和英雄级扩展，每一步都配以代码示例和思考引导。\par
+\chapter{什么是神经网络？（生物灵感与基本概念）}
+神经网络的起源可以追溯到生物学。大脑中的神经元通过树突接收信号，经细胞体处理后，从轴突传递给下一个神经元，突触则调控信号强度。人工神经元模仿这一机制：它接收多个输入信号，每个输入乘以一个权重（代表连接强度），再加上偏置项，然后通过激活函数产生输出。权重和偏置是网络「学习」的关键参数，通过训练不断调整。\par
+与传统机器学习相比，神经网络更强大。线性回归或 Logistic 回归擅长处理线性关系，但面对复杂非线性数据如图像或语音时，它们会失效，因为无法自动提取深层特征。神经网络通过多层堆叠，自动学习层次化表示：浅层捕捉边缘，深层识别物体。这就是它处理猫狗分类或语音转文字的秘密。\par
+核心组件可以用单层感知机来理解，它是一个人工神经元：输入向量 x 通过权重 w 加权求和，加上偏置 b，得到 z，然后激活函数 f(z)输出结果。多层感知机（MLP）扩展为输入层、多个隐藏层和输出层。输入层接收原始数据，隐藏层逐层变换特征，输出层给出预测。例如，在分类任务中，输出层可能使用 Softmax 将分数转为概率分布。\par
+为什么神经网络能「学习」？因为它通过数据调整权重，模拟大脑的突触可塑性。思考一下：如果权重固定，网络只是固定函数；通过训练，它能适应任意复杂模式。\par
+\chapter{数学基础（从零构建理解）}
+前向传播是神经网络计算预测的过程。以一个简单网络为例，假设输入 x 是一个向量，权重 w 是矩阵，第一层计算 $z^{[1]} = w^{[1]} \cdot x + b^{[1]}$，然后应用激活函数如 Sigmoid： $\sigma(z) = \frac{1}{1 + e^{-z}}$，得到 $a^{[1]} = \sigma(z^{[1]})$。下一层类似： $z^{[2]} = w^{[2]} \cdot a^{[1]} + b^{[2]}$，输出层或许用 Softmax。对于 ReLU 激活， $f(z) = \max(0, z)$，它简单高效，避免梯度消失。手算示例：输入 x=[1,2]，w1=[[0.5,0.3],[0.4,0.6]]，b1=[0.1,0.2]，则 z1=[0.5\textit{1+0.3}2+0.1, 0.4\textit{1+0.6}2+0.2]=[1.2,1.8]，ReLU 后 a1=[1.2,1.8]。\par
+损失函数衡量预测与真实的差距。对于分类，交叉熵损失优异： $L = -\sum y \log(\hat{y})$，其中 y 是真实标签，\${}\textbackslash{}hat\{{}y\}{}\${}是预测概率。它惩罚置信错误的预测。对于回归，均方误差 MSE： $L = \frac{1}{n} \sum (y - \hat{y})^2$，简单直观。\par
+反向传播是训练核心，利用链式法则从输出层反向计算梯度。例如，损失对最后一层权重的梯度为 $\frac{\partial L}{\partial w^{[L]}} = \frac{\partial L}{\partial a^{[L]}} \cdot \frac{\partial a^{[L]}}{\partial z^{[L]}} \cdot \frac{\partial z^{[L]}}{\partial w^{[L]}}$，逐层向前传播误差。梯度下降更新参数： $w \leftarrow w - \eta \frac{\partial L}{\partial w}$，η是学习率。SGD 用单个样本计算梯度，Adam 结合动量和自适应学习率更稳定。但深层网络易遇梯度消失（Sigmoid 梯度趋零）或爆炸（梯度过大），ReLU 和规范化可缓解。\par
+下面是用 NumPy 从零实现一个简单神经元的代码示例。这个函数模拟单层感知机的前向传播和反向传播。\par
+\begin{lstlisting}[language=python]
+import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-np.clip(z, -250, 250)))  # 防止溢出
+
+def sigmoid_derivative(a):
+    return a * (1 - a)
+
+class SimpleNeuron:
+    def __init__(self, input_size):
+        self.W = np.random.randn(input_size, 1) * 0.01  # 小随机初始化
+        self.b = np.zeros((1, 1))
+    
+    def forward(self, X):
+        self.z = np.dot(X, self.W) + self.b  # z = Wx + b
+        self.a = sigmoid(self.z)  # 激活
+        return self.a
+    
+    def backward(self, X, y, output, learning_rate=0.01):
+        m = X.shape[0]
+        dz = output - y  # 输出误差
+        dW = np.dot(X.T, dz) / m  # 权重梯度
+        db = np.sum(dz, axis=0, keepdims=True) / m  # 偏置梯度
+        self.W -= learning_rate * dW  # 更新
+        self.b -= learning_rate * db
+        return dW, db
+
+# 示例使用
+X = np.array([[1, 2], [3, 4]])  # 两个样本，每个 2 维
+y = np.array([[1], [0]])  # 标签
+neuron = SimpleNeuron(2)
+output = neuron.forward(X)
+print("预测 :", output)
+dW, db = neuron.backward(X, y, output)
+print("权重梯度 :", dW)
+\end{lstlisting}
+这段代码首先定义 Sigmoid 激活及其导数，导数用于反向传播： $\sigma'(z) = \sigma(z)(1 - \sigma(z))$。SimpleNeuron 类初始化小随机权重避免对称性问题。前向传播计算线性组合 z，再激活为 a。反向传播计算 dz = a - y（二分类 MSE 近似），然后 dW = X\^{}T * dz / m（平均梯度），db 类似。更新用梯度下降。这个示例展示了完整训练一步：输入 X（2 样本 2 特征）、标签 y、前向得 output、反向更新参数。运行后，你会看到预测从随机值调整，梯度反映误差方向。通过多次迭代，网络逼近正确分类。\par
+\chapter{构建第一个神经网络（实践入门）}
+实践从环境搭建开始。安装 NumPy 用于计算，Matplotlib 绘图，PyTorch 简化张量操作（pip install torch torchvision）。我们用 MNIST 手写数字数据集入门，它包含 6 万训练图像，每张 28x28 灰度像素。\par
+数据预处理至关重要：归一化像素到[0,1]（除以 255），展平为 784 维向量，标签转为 One-Hot 编码（如 3 转为[0,0,0,1,0,...]）。模型用全连接层：输入 784 →隐藏层 30 →输出 10（Softmax 分类）。\par
+训练循环包括前向传播计算预测，交叉熵损失，反向传播更新权重。PyTorch 用 autograd 自动求导，DataLoader 批量加载数据。\par
+下面是完整 MNIST 分类器的 PyTorch 代码。这个脚本加载数据、定义模型、训练并评估。\par
+\begin{lstlisting}[language=python]
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+
+# 数据加载与预处理
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+train_dataset = datasets.MNIST('data', train=True, download=True, transform=transform)
+test_dataset = datasets.MNIST('data', train=False, transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False)
+
+# 模型定义
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(28*28, 30)  # 输入 784 → 30
+        self.fc2 = nn.Linear(30, 10)     # 30 → 10 输出
+    
+    def forward(self, x):
+        x = x.view(-1, 28*28)  # 展平
+        x = torch.relu(self.fc1(x))  # ReLU 激活
+        x = torch.softmax(self.fc2(x), dim=1)  # Softmax 概率
+        return x
+
+model = Net()
+criterion = nn.CrossEntropyLoss()  # 交叉熵，自动处理 One-Hot
+optimizer = optim.Adam(model.parameters(), lr=0.001)  # Adam 优化器
+
+# 训练循环
+epochs = 5
+for epoch in range(epochs):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        optimizer.zero_grad()  # 清零梯度
+        output = model(data)   # 前向
+        loss = criterion(output, target)  # 损失
+        loss.backward()        # 反向
+        optimizer.step()       # 更新
+    print(f'Epoch {epoch+1}, Loss: {loss.item():.4f}')
+
+# 评估
+model.eval()
+correct = 0
+with torch.no_grad():
+    for data, target in test_loader:
+        output = model(data)
+        pred = output.argmax(dim=1)
+        correct += pred.eq(target).sum().item()
+accuracy = 100. * correct / len(test_loader.dataset)
+print(f'准确率 : {accuracy:.2f}%')
+\end{lstlisting}
+代码解读从数据开始：transforms 归一化 MNIST 均值 0.1307、方差 0.3081，提高收敛。DataLoader 批量 64 样本 shuffle 随机化。Net 模型继承 nn.Module，forward 展平输入、ReLU 隐藏层、Softmax 输出（dim=1 沿类别维度）。CrossEntropyLoss 内部结合 LogSoftmax 和 NLLLoss，target 是整数标签无需 One-Hot。Adam 初始化模型所有参数（self.fc1.weight 等）。训练中 zero\_{}grad 清前次梯度，forward 得 output，loss 计算（实际 $-\sum y \log \hat{y}$），backward 计算全链梯度，step 更新。5 个 epoch 后评估：no\_{}grad 禁用梯度，argmax 选最大概率类，eq 比较正确数。典型准确率达 95\%{} 以上。这个代码可在 Colab 免费运行，完整仓库见 GitHub: https://github.com/example/nn-from-zero。\par
+评估用准确率：正确预测比例。学习曲线 plot loss 随 epoch 下降，确认收敛。\par
+\chapter{进阶技巧与优化（从入门到熟练）}
+优化网络架构是提升性能关键。Dropout 随机丢弃神经元（率 0.2-0.5），防止过拟合，如 nn.Dropout(0.2)。L2 正则化加权重衰减：损失 += λ ||w||\^{}2，PyTorch 中 optimizer 用 weight\_{}decay=1e-4。批量归一化标准化每层输入： $BN(x) = \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} \gamma + \beta$，加速训练，nn.BatchNorm1d(30)插入层间。\par
+超参数调优如学习率（1e-3 起步）、Batch Size（32-256）、Epochs（10-100）。Grid Search 枚举组合，但 Ray Tune 更高效。\par
+常见问题中，过拟合表现为训练准确高测试低，用验证集早停：若 val loss 5 epoch 不降则停止。欠拟合则增层/数据增强（如随机旋转 MNIST 图像）。\par
+扩展到 CIFAR-10 彩色图像（10 类，32x32 RGB），需展平 3072 维或引入 CNN，但先用 MLP 测试优化技巧。\par
+\chapter{卷积神经网络（CNN）与序列模型简介（英雄级扩展）}
+CNN 专为图像设计。卷积层用滤波器扫描局部区域：输出 $o_{i,j} = \sum \sum k \cdot input_{i+m,j+n}$，捕捉边缘/纹理。池化如 MaxPool 下采样，减少参数。LeNet-5 首用 CNN 识 MNIST。PyTorch 示例简化为 Conv2d(1,6,5)→ ReLU → MaxPool2d → FC。\par
+序列模型如 RNN 处理文本：隐藏状态 $h_t = \tanh(w_h h_{t-1} + w_x x_t)$，但长序列梯度消失。LSTM 加门控：遗忘门 $f_t = \sigma(w_f [h_{t-1}, x_t])$，选择性记忆。\par
+Transformer 革命性引入注意力： $Attention(Q,K,V) = softmax(\frac{QK^T}{\sqrt{d_k}}) V$，并行计算，自注意力捕捉全局依赖，奠基 BERT/GPT。\par
+\chapter{实际应用与部署}
+神经网络驱动真实场景：计算机视觉用人脸识别（CNN+ArcFace 损失），NLP 做情感分析（LSTM+ 注意力），推荐系统用 MLP 预测点击率（Wide\&{}Deep 模型）。\par
+部署用 ONNX 导出跨框架模型，TensorFlow Lite 跑移动端，Flask 建 Web API：from flask import Flask; app.route('/predict', methods=['POST'])加载 model.predict(json 数据)。\par
+资源推荐：Goodfellow《深度学习》书籍，Andrew Ng Coursera 课程，PyTorch 文档。\par
+\chapter{结论}
+我们从生物神经元起步，穿越前向反向数学、MNIST 实践、优化技巧，到 CNN Transformer 英雄境界。现在，你已掌握神经网络精髓。下一步，参加 Kaggle 竞赛如 Titanic 生存预测，或建个人项目如自定义图像分类器。坚持实践，每个人都能成为 AI 英雄！常见问题：无需 PhD，实践胜理论。\par
+\chapter{附录}
+数学速查：前向 $z^l = w^l a^{l-1} + b^l$，反向 $\frac{\partial L}{\partial w^l} = \delta^l (a^{l-1})^T$。代码汇总：Jupyter Notebook https://colab.research.google.com/example。进一步阅读：LeNet 论文、ResNet Skip Connection，用 Colab 免费实验。词汇：Epoch 一轮全数据遍历，激活函数引入非线性。\par
