@@ -1,0 +1,121 @@
+---
+title: "DOS 内存管理"
+author: "马浩琨"
+date: "Feb 27, 2026"
+description: "DOS 内存分段模型、MCB 分配与 640KB 壁垒突破详解"
+latex: true
+pdf: true
+---
+
+
+DOS，即磁盘操作系统（Disk Operating System），作为早期 PC 的核心软件，从 MS-DOS 1.0 于 1981 年发布，到 6.22 版本于 1994 年止，经历了漫长的演进过程。它最初是为 Intel 8086/8088 处理器设计的单任务、16 位实模式操作系统，主导了个人计算机的黄金时代。尽管如今已被现代操作系统取代，但 DOS 的内存管理机制仍是理解计算机历史的关键一环。
+
+DOS 内存管理的复杂性源于硬件限制。Intel 8086 处理器仅有 20 位地址总线，提供 1MB 物理内存空间，却通过分段寻址模拟出更大的地址范围。这种设计虽巧妙，却带来了段重叠、内存碎片等问题。本文将从基础寻址机制入手，逐步剖析 DOS 的内存模型、分配策略、高级扩展技术，直至优化实践，旨在为系统程序员、逆向工程爱好者和历史操作系统研究者提供全面指南。
+
+## 2. DOS 内存模型基础
+
+DOS 运行于实模式下，其内存寻址采用分段机制。处理器使用四个段寄存器——代码段 CS、数据段 DS、堆栈段 SS 和附加段 ES——每个均为 16 位。通过公式 $物理地址 = 段地址 \times 16 + 偏移量$，其中段地址和偏移量均为 16 位值，即可生成 20 位物理地址。例如，段地址 A000h 与偏移 1000h 结合，计算为 $A000h \times 10h + 1000h = A1000h$。这种机制允许程序访问整个 1MB 空间，但段寄存器间的重叠可能导致地址歧义，需要程序员小心管理。
+
+DOS 将 1MB 内存划分为不同区域。0 到 640KB 称为低端内存或常规内存（Conventional Memory），这是 DOS 内核、TSR 程序和普通应用程序的主要运行区。超出 640KB 至 1MB 的高端内存（Upper Memory）则分配给 ROM BIOS、视频内存（如 A0000h-AFFFFh 的 VGA 显存）和设备驱动程序。这种划分源于 IBM PC 硬件设计，将高端内存预留给固件和服务，形成了著名的「640KB 壁垒」。
+
+扩展内存和扩展 BIOS 数据区虽在高端内存中提及，但 DOS 早期版本无法直接利用它们。这些区域为后续的内存扩展技术奠定了基础，如 EMS 和 XMS。
+
+## 3. DOS 内存分配机制
+
+DOS 通过内存控制块（MCB，Memory Control Block）管理常规内存，每个分配块前均有一个 20 字节的 MCB 结构。MCB 的第一个字节存储所有者 ID，通常为程序的 PID（进程 ID，DOS 中为段地址），或值为 FFh 表示空闲块；接下来两个字节是块大小（段数）；第三个字节为类型标志，00h 表示已用，04h 表示空闲；最后 8 字节为程序名或「DOS」标识，后跟下一 MCB 的段地址指针。这种链式结构允许 DOS 遍历所有块，实现首次适配分配算法。
+
+内存分配依赖中断 21h 的子功能。以 INT 21h AH=48h 为例，该函数分配指定段数的内存块。程序先设置 BX 为所需段数（1 段 = 16 字节），调用中断后，若成功，AX 返回块起始段地址；否则进位标志 CF=1，AX 含错误码。释放使用 INT 21h AH=49h，将 ES 设为要释放块的段地址；调整大小则用 AH=4Ah，指定新段数于 BX。此外，AH=51h 可获取当前 PSP（程序段前缀）的段地址，返回于 BX。
+
+程序加载过程始于 PSP，一个位于程序加载段前 256 字节的结构。它包含终止向量、环境块指针、命令行缓冲区等字段，确保 DOS 能正确初始化进程。加载 COM 文件时，DOS 将其置于可用内存起始后紧跟 PSP；EXE 文件则解析头部，调整代码、数据和堆栈段，实现更灵活布局。
+
+## 4. 内存管理挑战：640KB 壁垒
+
+常规内存不足是 DOS 的顽疾。TSR（Terminate and Stay Resident）程序通过 INT 27h 或 AH=31h 驻留，占用内存不释放，导致后续程序加载失败，常现「程序太大了」（错误码 8）。内存碎片进一步恶化问题，小块空闲空间无法满足大块需求。
+
+UMB（Upper Memory Blocks）提供解决方案。从 DOS 5.0 起，HIMEM.SYS 加载 XMS 驱动，利用 640KB 以上空闲区创建 UMB。CONFIG.SYS 中配置 `DEVICE=C:\DOS\HIMEM.SYS` 和 `DOS=HIGH,UMB`，将 DOS 数据移入 UMB，并启用 UMB 链。EMM386.EXE 进一步模拟 VCPI 接口，将扩展内存映射为 UMB。使用 `DEVICEHIGH=C:\DOS\DRV1.SYS` 可将驱动加载至 UMB，显著释放常规内存。
+
+## 5. 高级内存管理技术
+
+EMS（Expanded Memory Specification）是 LIM 4.0 标准定义的页面式内存扩展，使用页面帧（Page Frame，通常 64KB）与 16 个映射寄存器。程序通过 INT 67h 访问，如 AH=40h 分配句柄，AH=44h 映射页面至页面帧。EMM386.EXE 可将扩展内存模拟为 EMS，即使无真实 EMS 硬件。
+
+XMS（Extended Memory Specification）则直接管理扩展内存（超出 1MB）。XMS 驱动提供 16 位接口，关键函数通过 INT 2Fh AH=4310h 获取入口点调用。以分配为例，发送函数号 0900h 于 AX，DX 返回句柄，SI:DS 指向请求结构（含段数）；释放用 0901h；移动内存用 0903h，支持跨 1MB 传输。
+
+DOS 5.0 引入 LOADHIGH/LH 命令，将 TSR 或驱动移入 UMB。MEMMAKER 工具自动扫描并优化 CONFIG.SYS，实现最佳布局。
+
+## 6. 内存诊断与优化工具
+
+DOS 内置 MEM 命令显示内存状态。执行 `MEM /C` 分类列出模块占用，`/P` 分页浏览；输出详解空闲块、UMB 使用，帮助诊断碎片。CHKDSK 虽主查磁盘，也验证内存完整性。
+
+第三方如 QRAM 和 386MAX 提供高级管理，模拟虚拟内存或动态重定位。在现代环境中，DOSBox 的内存监控插件允许实时追踪 MCB 链。
+
+## 7. 实际编程示例
+
+以下汇编代码演示简单内存分配，分配 64KB 并填充数据。首先，设置 BX 为段数：64KB / 16 字节/段 = 4000h 段（实际 64KB=1000h 字节，段数 =1000h/10h=100h，代码中修正为 bx, 100h）。完整代码如下：
+
+```assembly
+.model small
+.code
+start:
+    mov ax, @data
+    mov ds, ax
+    
+    mov ah, 48h          ; DOS 分配内存功能
+    mov bx, 100h         ; 请求 100 段 = 64KB (100h * 10h = 1000h 字节)
+    int 21h              ; 调用 DOS 中断
+    jc error             ; 若 CF=1 (进位标志置位)，跳转错误处理
+    mov es, ax           ; AX 返回分配块段地址，置入 ES 以访问
+    xor di, di           ; DI=0，偏移起始
+    mov cx, 1000h        ; CX=64KB/2=1000h 字数，用于填充循环
+fill_loop:
+    mov word ptr es:[di], 1234h  ; 填充每个字为 1234h
+    add di, 2            ; 前进两个字节
+    loop fill_loop       ; 循环直至 CX=0
+    ; 内存使用完毕，可读写 es:[0] 至 es:[FFFFh]
+    
+release:
+    mov ah, 49h          ; 释放内存功能
+    mov es, ax           ; ES 已含段地址
+    int 21h              ; 调用释放
+    
+exit:
+    mov ax, 4C00h        ; 正常退出
+    int 21h
+    
+error:
+    mov ah, 4Eh          ; 输出错误信息（简化）
+    int 21h
+    jmp exit
+end start
+```
+
+这段代码先调用 INT 21h AH=48h 分配，若成功则用 ES:DI 访问内存，循环填充 64KB 数据（注意 word 填充以优化速度）。释放前确保不再引用该块，避免野指针。错误处理检查 CF 标志，典型于生产代码中添加错误码显示（AH=59h）。
+
+TSR 程序需谨慎管理内存。驻留时计算最小段数于 DX，调用 AH=31h，保留 MCB 不释放，但热键钩子（如 INT 09h）须检查 PSP 确保不越界。
+
+优化 CONFIG.SYS 示例：
+
+```
+DEVICE=C:\DOS\HIMEM.SYS
+DEVICE=C:\DOS\EMM386.EXE RAMFRAME=E000 NOEMS
+DOS=HIGH,UMB
+DEVICEHIGH=C:\DOS\DRV1.SYS
+```
+
+此配置加载 HIMEM 创建 XMS，EMM386 映射 UMB 于 E000h 帧（避开视频区），DOS 移入高区，驱动优先 UMB 加载。
+
+## 8. 局限性与历史影响
+
+DOS 内存管理缺乏虚拟内存、多任务保护，易碎片化和崩溃。向 Windows 3.x 过渡依赖 DOS 扩展器如 Win386 或 DesqView，提供粗粒度多任务。
+
+其设计启发现代嵌入式系统，如实时 OS 的分段策略。与 Linux 段页式管理对比，DOS 凸显早期权衡：简单高效却不安全。
+
+## 9. 结论与资源推荐
+
+DOS 内存管理从 MCB 链到 XMS/EMS 扩展，体现了硬件受限下的创新智慧，虽有局限，却奠基 PC 软件生态。
+
+推荐《MS-DOS 程序员手册》和《Undocumented DOS》；Ralph Brown's Interrupt List 详列中断；DOSBox Wiki 和 FreeDOS 项目供实验。
+
+建议在 DOSBox 复现 UMB 优化，或编写 TSR 测试内存链。
+
+**附录：术语表**  
+MCB：内存控制块，管理分配链。PSP：程序段前缀，进程元数据。UMB：高端内存块，640KB 以上常规区。EMS：扩展内存规范，页面映射。XMS：扩展内存规范，直接分配。
