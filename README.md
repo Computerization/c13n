@@ -2,7 +2,7 @@
 
 Welcome to `c13n`, the newsletter of [Computerization](https://computerization.io).
 
-We create and share tutorials and insights on computer science and technology. We are a passionate high school student club dedicated to advancing informatization systems at the Shanghai World Foreign Language Academy.
+We create and share tutorials and insights on computer science and technology. We are a passionate high school student club dedicated to advancing informatization systems at the World Foreign Language Academy.
 
 ## Architecture
 
@@ -42,3 +42,4 @@ The two commands will be automatically executed on commit by the GitHub Action b
 ## License
 
 MIT for source code, CC BY 4.0 for texts.
+
