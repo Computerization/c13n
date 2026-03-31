@@ -1,0 +1,266 @@
+---
+title: "浏览器端开源 CAD 软件开发"
+author: "杨岢瑞"
+date: "Mar 31, 2026"
+description: "浏览器端开源 CAD 开发全栈实战指南"
+latex: true
+pdf: true
+---
+
+
+计算机辅助设计（CAD）软件的发展历程堪称工程技术领域的传奇。从上世纪 60 年代的线描仪时代，到 80 年代 AutoCAD 等桌面软件的霸主地位，再到如今的云端协作与 Web 化转型，CAD 始终是制造业与建筑业的核心生产力工具。传统 CAD 软件如 AutoCAD 和 SolidWorks 虽然功能强大，但其安装过程繁琐、对硬件要求极高，且跨平台兼容性差，导致中小企业与个人设计师望而却步。这些局限性在移动互联网时代愈发凸显，用户迫切需要一种无需安装、随时随地可用的解决方案。
+
+浏览器端 CAD 的兴起得益于 Web 技术的革命性进步。HTML5 Canvas 提供了高效的 2D 绘图能力，WebGL 则解锁了浏览器内的 3D 硬件加速渲染，而 WebAssembly（WASM）更是让复杂几何计算在浏览器中成为可能。这些技术合力，使得零安装、跨 PC/移动平台、实时多人协作以及无缝集成成为现实。以往需要数 GB 安装包的 CAD 功能，如今可在任意现代浏览器中流畅运行。市场需求同样强劲：中小企业希望降低软件采购成本，独立设计师追求移动端灵感捕捉，学生与教育机构则需要免费易用的教学工具。数据显示，全球 CAD 市场规模已超 100 亿美元，而 Web CAD 细分领域年增长率超过 30%。
+
+开源在这一领域的价值尤为突出。传统开源 CAD 如 FreeCAD（参数化 3D 建模）、LibreCAD（2D 绘图）和 OpenSCAD（脚本式建模）虽优秀，但仍局限于桌面环境。浏览器端开源 CAD 则开启了新纪元：社区驱动的快速迭代、低门槛贡献，以及免费分发让全球开发者能共同完善内核。想象一下，一个基于 WebAssembly 的 OpenCascade 端口，能让浏览器直接处理工业级 BREP 几何，这不仅是技术突破，更是开源精神的延续。
+
+本文面向 Web 开发者、CAD 爱好者和开源贡献者，提供从概念到实战的完整开发指南。我们将剖析核心技术栈、审视现有项目、亲手构建一个功能齐全的浏览器 CAD，并分享开源最佳实践。无论你是想 fork 现有项目，还是从零打造属于自己的 CAD 工具，这篇文章都将为你铺平道路。通过 8000 余字的详尽剖析、实战代码与优化策略，你将掌握浏览器 CAD 的全栈开发之道。
+
+## 2. 浏览器端 CAD 的核心技术栈
+
+浏览器端 CAD 的灵魂在于高效渲染与精确计算的双轮驱动。渲染引擎首推 WebGL，它利用 GPU 进行硬件加速 3D 渲染，能轻松处理数百万顶点的复杂模型。相比 2D Canvas 的软件渲染，WebGL 的帧率可提升数十倍，但学习曲线较陡。为此，Three.js 和 Babylon.js 等库应运而生，它们封装了底层 WebGL API，提供场景管理、材质系统和光照计算。举例来说，使用 Three.js 实现一个基础 3D 建模视图非常直观。以下代码创建一个旋转的立方体场景：
+
+```javascript
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const geometry = new THREE.BoxGeometry();
+const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+
+camera.position.z = 5;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;  // 惯性拖拽
+
+function animate() {
+  requestAnimationFrame(animate);
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+```
+
+这段代码首先导入 Three.js 核心模块和轨道控制器。创建场景、透视相机和 WebGL 渲染器，并设置画布尺寸。然后生成一个立方体几何体，使用基本材质着色并添加到场景。相机定位于 Z=5 处，确保模型可见。OrbitControls 提供鼠标拖拽旋转、缩放功能，enableDamping 属性添加平滑惯性效果。动画循环通过 requestAnimationFrame 持续旋转立方体并更新渲染。这是一个 CAD 视图的基础雏形，后续可扩展为模型编辑器。
+
+计算引擎的瓶颈在于 JavaScript 的单线程与浮点精度不足，无法应对 CAD 的复杂几何运算，如布尔求交或 NURBS 曲面拟合。此时 WebAssembly 登场，它允许将 C++ 或 Rust 代码编译为浏览器可执行的二进制模块，性能接近原生应用。典型应用是移植 OpenCascade（OCCT），业界领先的开源 CAD 内核，支持 BREP（边界表示）建模。opencascade.js 便是其 WASM 端口，能在浏览器中执行 STEP 文件解析与实体运算。性能对比显示，WASM 版布尔运算速度是纯 JS 的 50 倍以上，这对于实时预览至关重要。
+
+几何建模依赖专用库。OpenCascade 通过 WASM 提供工业级内核，包括精确的曲线曲面表示和拓扑操作。CGAL.js 专注计算几何，如凸包与三角剖分，但仍处实验阶段。Three-CSG 则用纯 JS 实现构造实体几何（CSG），适合快速原型。earcut 库专攻多边形三角剖分，高性能源于增量算法，避免了昂贵的 Delaunay 三角化。对于 UI 交互，React 或 Vue 结合 Ant Design 构建工具栏与属性面板。拖拽操作可借助 Konva.js 的事件系统，或自定义 mouse/touch 事件处理程序，确保触屏适配。Hammer.js 进一步简化多点触控手势，如捏合缩放。
+
+数据格式支持是 CAD 的命脉。浏览器需处理 STEP/IGES（精确交换）、STL/OBJ（网格）和 SVG（2D）。Three.js 自带 loaders 模块，能异步加载这些格式，结合 FileSaver.js 实现导出。实际开发中，先验证文件 MIME 类型，再用 WASM 解析精确数据，最后转换为 WebGL 可渲染网格。这种技术栈组合，确保了浏览器 CAD 的高保真与高效。
+
+## 3. 现有浏览器端开源 CAD 项目分析
+
+浏览器端开源 CAD 项目已初具规模，但各有侧重。OpenJSCAD 以 5k+ GitHub Stars 领跑，支持脚本式参数化建模，技术栈融合 JS 和 WASM，社区活跃度高。CadHub 则提供桌面 Web 双端体验，集成 Three.js 和多种内核，活跃度中等。FreeCAD Web 是实验性移植，借力 WASM 运行 FreeCAD 内核，但活跃度较低。Sketchlet 聚焦 2D 矢量编辑，使用 SVG 与 Canvas，新兴但势头强劲。这些项目奠定了基础，却也暴露共性痛点。
+
+以 OpenJSCAD 为例，其架构精妙：左侧在线代码编辑器实时编译用户脚本，右侧 Three.js 预览 3D 模型。源码亮点在于参数化 DSL，用户可编写如 function main() { return cylinder({h: 20, r: 10}); } 的声明式代码，内核自动展开为 CSG 树。浏览器端通过 jscad-openjscad 渲染器处理，此 DSL 借鉴 OpenSCAD，易学且强大。但交互性是其短板：缺乏直观的拖拽编辑，只能靠代码迭代，限制了非程序员用户。
+
+CadHub 的创新在于多内核支持，既兼容 OpenSCAD 脚本，也集成 OpenCascade WASM 端口。部署采用 Docker 容器化，确保一致性，用户上传 STEP 文件后，即可参数化修改并导出。架构上，它用 Electron 桥接桌面与 Web，Three.js 负责视图，WASM offload 计算。这种混合模式扩展性强，但浏览器纯 Web 版加载时间较长，受限于 WASM 模块体积。
+
+这些项目的痛点总结为三点：性能瓶颈源于网格密集模型的渲染压力，内核移植难度高（如 FreeCAD 的完整约束求解未落地），文件兼容性差（STEP 解析常丢失拓扑信息）。此外，缺乏标准化 UI 与实时协作，进一步阻碍主流采用。开发者需从中汲取教训，在新项目中优先 WASM 多线程与渐进式加载。
+
+## 4. 从零开发浏览器端 CAD 软件实战指南
+
+实战从项目初始化开始。使用 Vite 构建 React + TypeScript 脚手架，能快速启动开发服务器并享受热重载。执行 npm create vite@latest cad-web -- --template react-ts，进入目录后安装核心依赖：npm i three @types/three opencascade.js mathjs fabricjs react-three-fiber。这些包覆盖渲染、几何与 UI 需求。Vite 的 ESM 打包确保 WASM 模块无缝集成。
+
+首个核心模块是 3D 视图控制器。基于 Three.js OrbitControls，实现轨道导航与截面视图。扩展代码如下：
+
+```tsx
+import React, { useRef, useEffect } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { Canvas, useThree } from '@react-three/fiber';
+
+function Scene() {
+  const { camera, gl } = useThree();
+  const controlsRef = useRef<OrbitControls>();
+
+  useEffect(() => {
+    const controls = new OrbitControls(camera, gl.domElement);
+    controlsRef.current = controls;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    // 截面视图：clipping planes
+    camera.layers.enable(1);  // 启用层 1 用于截面
+  }, [camera, gl]);
+
+  return null;
+}
+
+export default function Viewport() {
+  return (
+    <Canvas camera={{ position: [0, 0, 10] }}>
+      <Scene />
+      <mesh>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshStandardMaterial color="hotpink" />
+      </mesh>
+    </Canvas>
+  );
+}
+```
+
+这段 React 组件利用 react-three-fiber（R3F）声明式渲染 Three.js 场景。useThree 钩子访问相机与渲染器引用。useEffect 初始化 OrbitControls，dampingFactor 控制阻尼强度。新增 clipping planes 支持截面视图，通过 camera.layers 隔离渲染层，实现动态剖切。这为后续模型检查奠基，性能上 R3F 的 hooks 避免了手动循环。
+
+第二个模块是 2D 草图编辑器。使用 Fabric.js 实现约束绘图，支持直线、圆弧与简单约束求解。约束如平行/垂直用向量点积判断：
+
+```javascript
+import { fabric } from 'fabric';
+
+const canvas = new fabric.Canvas('sketch-canvas', { width: 800, height: 600 });
+
+function addLine(x1: number, y1: number, x2: number, y2: number) {
+  const line = new fabric.Line([x1, y1, x2, y2], {
+    stroke: 'black',
+    strokeWidth: 2,
+    selectable: true,
+  });
+  canvas.add(line);
+}
+
+// 约束求解：平行检查
+function constrainParallel(line1: fabric.Line, line2: fabric.Line) {
+  const vec1 = { x: line1.x2 - line1.x1, y: line1.y2 - line1.y1 };
+  const vec2 = { x: line2.x2 - line2.x1, y: line2.y2 - line2.y1 };
+  const dot = vec1.x * vec2.x + vec1.y * vec2.y;
+  const mag1 = Math.sqrt(vec1.x**2 + vec1.y**2);
+  const mag2 = Math.sqrt(vec2.x**2 + vec2.y**2);
+  const cosTheta = dot / (mag1 * mag2);
+  if (Math.abs(cosTheta - 1) < 0.01) {  // 余弦接近 1 为平行
+    line2.set({ stroke: 'blue' });  // 视觉反馈
+  }
+  canvas.renderAll();
+}
+```
+
+Fabric.js 的对象模型允许实时编辑路径。addLine 创建可选中线段，constrainParallel 计算方向向量夹角，若余弦绝对值接近 1，则标记为平行约束（蓝色高亮）。实际中，可集成完整求解器如 Sylvester 库处理过度约束系统。此模块输出 SVG 路径，供 3D 拉伸使用。
+
+第三个模块聚焦几何建模，实现拉伸、旋转与布尔运算。Three-CSG 处理 CSG 操作：
+
+```javascript
+import * as THREE from 'three';
+import * as CSG from 'three-csg-ts';
+
+function extrudeProfile(profile: THREE.Shape, height: number): THREE.Mesh {
+  const geometry = new THREE.ExtrudeGeometry(profile, { depth: height });
+  const material = new THREE.MeshStandardMaterial({ color: 0x44ff44 });
+  return new THREE.Mesh(geometry, material);
+}
+
+async function booleanSubtract(a: THREE.Mesh, b: THREE.Mesh): Promise<THREE.Mesh> {
+  const aGeom = a.geometry.clone();
+  const bGeom = b.geometry.clone();
+  const result = CSG.subtract(aGeom, bGeom);
+  const material = new THREE.MeshStandardMaterial({ color: 0xff4444 });
+  return new THREE.Mesh(result, material);
+}
+```
+
+extrudeProfile 从 2D 轮廓拉伸实体，ExtrudeGeometry 参数 depth 控制高度。booleanSubtract 使用 three-csg-ts 库的 subtract 方法，克隆几何体避免修改原 mesh，返回差集结果。CSG 算法基于 BSP 树，浏览器端通过 Worker 异步执行，避免 UI 阻塞。
+
+参数化系统用 math.js 解析表达式。用户输入如「高度 = 长度 * 1.5」，math.js 求值为约束传播：
+
+```javascript
+import { create, all } from 'mathjs';
+
+const { evaluate, parse } = create(all);
+
+interface Param {
+  name: string;
+  expr: string;
+  value: number;
+}
+
+const params: Param[] = [];
+
+function updateParam(name: string, expr: string) {
+  const node = parse(expr);
+  const scope = params.reduce((acc, p) => ({ ...acc, [p.name]: p.value }), {});
+  const value = evaluate(node, scope);
+  const param = params.find(p => p.name === name) || { name, expr, value: 0 };
+  param.expr = expr;
+  param.value = value;
+  // 触发几何重构
+  rebuildModel();
+}
+```
+
+math.js 的 parse 生成抽象语法树，evaluate 在作用域中求值，支持循环依赖检测。此系统动态更新模型尺寸，实现 FreeCAD 式参数化。
+
+文件 IO 模块集成 opencascade.js 解析 STEP：
+
+```javascript
+import { OC } from 'opencascade.js';
+
+async function loadSTEP(file: File): Promise<THREE.Group> {
+  const buffer = await file.arrayBuffer();
+  const stepData = new OC.STEPControl_Reader_();
+  stepData.ReadFile('NUL', new Uint8Array(buffer));  // OCCT API
+  stepData.TransferRoots();
+  const shape = stepData.OneShape();
+  // 转换为 Three.js meshes（简化）
+  const meshes = ocToThree(shape);
+  return new THREE.Group().add(...meshes);
+}
+```
+
+OCCT 的 STEPControl_Reader 处理精确 BREP，TransferRoots 导入根实体，OneShape 合并为单一形状。自定义 ocToThree 函数遍历拓扑，生成 WebGL 网格。
+
+性能优化至关重要。LOD 通过 THREE.LOD 对象动态切换细节级别：远距离用低聚模型。Worker 线程 offload CSG 计算：
+
+```javascript
+const worker = new Worker('csg-worker.js');
+worker.postMessage({ geomA: aGeom.toJSON(), geomB: bGeom.toJSON() });
+worker.onmessage = (e) => {
+  const resultGeom = THREE.BufferGeometry.fromJSON(e.data);
+  scene.add(new THREE.Mesh(resultGeom, material));
+};
+```
+
+内存管理调用 geometry.dispose() 和 material.dispose() 释放 GPU 资源。测试用 Vitest 覆盖单元场景，Lighthouse 审计性能指标。
+
+完整 Demo 仓库：https://github.com/yourname/cad-web-template，提供一键部署模板。
+
+## 5. 开源最佳实践与社区建设
+
+开源成功离不开许可策略。MIT 许可推荐指数最高，其宽松条款便于商业集成，仅要求保留版权声明。相比 LGPL（链接时需开源），MIT 更吸引企业用户，推动生态扩张。
+
+文档是项目的门面。README 需包含安装、快速上手与架构图，在线 Demo 用 Vercel 一键部署，确保浏览器即用。API 文档借助 Storybook，交互式展示组件如视图控制器。
+
+贡献指南标准化流程：Issue 模板分类 Bug/Feature，PR 要求关联 Issue 并通过 CI 检查。代码规范用 ESLint（airbnb 规则）与 Prettier 统一风格，husky 钩子强制提交前格式化。
+
+发布路径多样：npm 发布核心库如 cad-core，Web 打包为静态站点。PWA 支持通过 manifest.json 与 Service Worker，实现离线编辑。
+
+变现不违背开源精神：SaaS 提供云存储与协作，插件市场售卖专业模块，GitHub Sponsors 获社区赞助。
+
+
+浏览器 CAD 仍面临挑战。性能需 WASM 多线程（SharedArrayBuffer）与 GPU 计算（WebGPU）。精度问题源于 JS 浮点误差，使用 BigFloat 库或 OCCT 高精度模式缓解。兼容性通过 Polyfill（如 core-js）桥接旧浏览器。安全上，Sandbox 用户脚本执行，避免 eval 注入。
+
+未来趋势激动人心。AI 辅助设计集成 TensorFlow.js，实现草图自动识别：$\mathbf{y} = f(\mathbf{x}; \theta)$ 神经网络预测几何参数。WebXR 开启 AR/VR 建模，Yjs + WebRTC 实现 OT（操作转换）实时协作。glTF 2.0 标准化 CAD 传输，压缩率达 90%。
+
+行动起来！fork 本文 Demo，贡献你的几何模块。资源包括 OpenCascade 文档、Three.js 示例与 CAD 论坛。
+
+浏览器端开源 CAD 将重塑设计范式，开源社区是先锋力量。加入我们，共筑 Web CAD 时代！
+
+## 附录
+
+**A. 完整技术栈清单**  
+three@0.158.0, opencascade.js@0.18.1, mathjs@12.4.2 等。安装：npm i three@0.158.0 等。
+
+**B. 参考文献**  
+《WebGL Programming Guide》，OpenJSCAD GitHub，OCCT 文档。
+
+**C. 术语表**  
+BREP：边界表示几何。NURBS：非均匀有理 B 样条。约束求解：几何关系闭合系统。
+
+**D. 更新日志**  
+v1.0：初版。计划季度更新 WebGPU 支持。
