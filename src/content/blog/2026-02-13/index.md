@@ -2,7 +2,7 @@
 title: "路径规划算法优化"
 author: "杨岢瑞"
 date: "Feb 13, 2026"
-description: "路径规划算法优化，从基础 A\*到 JPS 前沿实践"
+description: "路径规划算法优化，从基础 A*到 JPS 前沿实践"
 latex: true
 pdf: true
 ---
