@@ -1,0 +1,87 @@
+\title{WebUSB 在浏览器中访问硬件设备的技术}
+\author{马浩琨}
+\date{Apr 07, 2026}
+\maketitle
+想象一下，你只需打开浏览器，就能直接控制 USB 设备，比如 Arduino 开发板、打印机或者自定义硬件，而无需安装驱动或专用软件。这就是 WebUSB 的魅力。在过去，Web 开发者想要访问硬件设备时，总会遭遇浏览器沙箱的严格限制、驱动程序的依赖以及跨平台兼容性的难题。传统的解决方案往往需要下载原生应用，或者通过复杂的插件桥接，这不仅增加了用户摩擦，还限制了 Web 应用的潜力。WebUSB 作为 W3C 标准 API，改变了这一切。它允许浏览器直接与 USB 设备通信，目前主要支持 Chrome 61 及以上版本、Edge 79 及以上版本以及 Opera，而 Safari 和 Firefox 暂不支持。通过 WebUSB，开发者可以构建纯 Web 应用来操控硬件，实现从前端直达物理世界的无缝连接。\par
+本文将带你从零起步，全面了解 WebUSB 的技术原理、实现步骤、安全机制以及实际应用。无论你是 Web 开发者、前端工程师还是硬件爱好者，这篇指南都能提供实用价值。我们将先探讨 WebUSB 的基础知识，然后深入 API 详解，接着通过真实案例展示应用，最后讨论安全最佳实践、局限性与未来展望。基于 2023 年标准，建议读者在开发时查阅最新浏览器支持情况。通过阅读，你将掌握如何在浏览器中请求设备权限、传输数据并处理事件，最终构建出功能强大的硬件控制应用。\par
+\chapter{WebUSB 基础知识}
+WebUSB 的起源可以追溯到 2014 年，由 Google 提出，并在 2016 年随 Chrome 61 正式落地。它旨在解决 Web 平台对硬件访问的瓶颈，推动 Web 应用向物联网和嵌入式领域扩展。目前，WebUSB 在 Chromium 系浏览器中支持良好，但 Firefox 和 Safari 仍处于实验阶段或未实现。官方标准文档可在 W3C WebUSB 规范和 MDN WebUSB API 页面找到，这些资源提供了详尽的规范解释和浏览器兼容性表格。\par
+WebUSB 的核心入口是 \texttt{navigator.usb} 对象。开发者首先需要检查浏览器支持，例如通过 \texttt{if ('usb' in navigator)} 来判断是否可用。一旦确认支持，就可以请求设备，获得 \texttt{USBDevice} 对象。这个对象封装了设备的元数据，如 \texttt{vendorId}（厂商 ID）和 \texttt{productId}（产品 ID），例如 Arduino Uno 的典型值是 \texttt{\{{} vendorId: 0x2341, productId: 0x0043 \}{}}。设备连接会触发 \texttt{USBConnection} 事件，开发者可以通过 \texttt{device.addEventListener('connect', handler)} 监听这些事件。数据传输依赖于端点（Endpoints），分为 IN（从设备到主机）和 OUT（从主机到设备）通道，支持 Bulk（批量）、Interrupt（中断）和 Control（控制）三种传输类型。此外，USB 设备往往支持多接口和多配置，开发者需使用 \texttt{claimInterface(0)} 来独占特定接口。\par
+与其他 Web API 相比，WebUSB 更侧重有线 USB 通信。与 Web Serial 的区别在于，前者针对串口设备，而 WebUSB 更通用，能处理 HID（人机交互设备，如键盘）、Mass Storage（存储设备）等多种 USB 类。与 Web Bluetooth 则是有线对无线，前者适用于低延迟、稳定连接的场景，如工业控制或开发板调试。这些概念构成了 WebUSB 的基石，理解它们有助于后续 API 使用。\par
+\chapter{WebUSB API 详解}
+请求设备权限是使用 WebUSB 的第一步。通过 \texttt{navigator.usb.requestDevice()} 方法，开发者可以弹出浏览器原生的设备选择对话框。这个方法接受一个选项对象，其中 \texttt{filters} 参数至关重要。它是一个数组，每项包含 \texttt{vendorId}、\texttt{productId} 或 \texttt{serialNumber} 等过滤器，用于匹配目标设备。例如，以下代码请求特定厂商的设备：\par
+\begin{lstlisting}[language=javascript]
+const device = await navigator.usb.requestDevice({ 
+  filters: [{ vendorId: 0x1234 }] 
+});
+\end{lstlisting}
+这段代码会触发用户交互，只有用户手动选择设备后才会返回 \texttt{USBDevice} 实例。如果不指定 \texttt{filters}，浏览器会列出所有可用 USB 设备，但这在生产环境中不推荐，因为可能暴露过多设备。\texttt{vendorId} 是 16 位十六进制值，由 USB-IF 分配给厂商；\texttt{productId} 则由厂商为具体产品定义；\texttt{serialNumber} 用于区分同款设备的实例。注意，该方法是异步的，必须在用户手势（如点击按钮）后调用，否则会被浏览器阻塞。\par
+获得设备后，需要打开并配置它。首先调用 \texttt{device.open()} 建立连接，然后使用 \texttt{device.selectConfiguration(1)} 选择设备配置（编号从 1 开始，通常默认配置为 1）。对于多接口设备，调用 \texttt{device.claimInterface(0)} 来独占接口 0，避免其他应用干扰。如果设备已由其他进程占用，会抛出 \texttt{DOMException}。这些步骤确保了独占访问权。\par
+数据传输是 WebUSB 的核心，分三种类型。Control Transfer 用于控制消息，如查询设备状态或设置特性，通过 \texttt{device.controlTransfer()} 实现。Bulk 和 Interrupt Transfer 适合大块或实时数据，使用 \texttt{device.transferOut(endpointNumber, data)} 发送和 \texttt{device.transferIn(endpointNumber, length)} 接收。例如，发送数据到端点 1：\par
+\begin{lstlisting}[language=javascript]
+const result = await device.transferOut(1, new Uint8Array([0x01, 0x02]));
+\end{lstlisting}
+这里，\texttt{transferOut} 的第一个参数是端点号（从设备描述符中获取，通常 OUT 端点为奇数），第二个是 \texttt{Uint8Array} 缓冲区。返回的 \texttt{USBOutTransferResult} 对象包含 \texttt{status}（如 'ok' 或 'stall'）和 \texttt{bytesWritten} 属性。接收数据类似，使用 \texttt{transferIn} 并检查 \texttt{result.data.getBuffer()} 获取字节数组。Isochronous Transfer 针对实时流，如音频，使用 \texttt{device.isochronousTransferOut()}，但浏览器支持有限。错误处理依赖 \texttt{try-catch} 捕获 \texttt{DOMException}，并检查 \texttt{result.status} 以重试或提示用户。\par
+事件监听和资源释放同样重要。使用 \texttt{device.addEventListener('disconnect', handler)} 监控设备拔出，并调用 \texttt{device.forget()} 释放权限，避免下次请求重复授权。完整流程为：请求设备、打开、配置、传输、监听事件、关闭。开发者可通过流程图可视化：从用户点击开始，经权限请求到数据循环，直至设备断开。\par
+\chapter{实际应用案例}
+一个简单案例是读取 USB HID 设备，如游戏手柄或键盘。首先，准备 HTML 页面包含按钮触发请求，然后编写 JavaScript。完整代码如下：\par
+\begin{lstlisting}[language=html]
+<!DOCTYPE html>
+<html>
+<body>
+  <button id="connect"> 连接 HID 设备 </button>
+  <div id="output"></div>
+  <script>
+    document.getElementById('connect').addEventListener('click', async () => {
+      const device = await navigator.usb.requestDevice({ filters: [] });
+      await device.open();
+      await device.selectConfiguration(1);
+      await device.claimInterface(0);
+      const result = await device.transferIn(1, 64);
+      document.getElementById('output').textContent = 
+        '收到数据 : ' + Array.from(result.data).join(' ');
+    });
+  </script>
+</body>
+</html>
+\end{lstlisting}
+这段代码在按钮点击时请求任意设备，打开后直接从端点 1 读取 64 字节 HID 报告。\texttt{transferIn} 返回的 \texttt{USBInTransferResult} 通过 \texttt{result.data} 提供 \texttt{Uint8Array}，我们转换为数组字符串显示在页面。实际运行时，按键会生成报告，浏览器实时捕获，无需驱动。这展示了 WebUSB 的即时性，适合输入设备监控。\par
+中级案例是控制 Arduino LED 灯。硬件上，将 LED 接至 Arduino Uno 的数字引脚 13，并上传简单固件监听 USB 命令。前端代码发送点亮指令：\par
+\begin{lstlisting}[language=javascript]
+const device = await navigator.usb.requestDevice({ 
+  filters: [{ vendorId: 0x2341, productId: 0x0043 }] 
+});
+await device.open();
+await device.selectConfiguration(1);
+await device.claimInterface(0);
+// 发送点亮命令 (0x01 为 ON)
+const result = await device.transferOut(1, new Uint8Array([0x01]));
+console.log('发送字节数 :', result.bytesWritten);
+\end{lstlisting}
+这里指定 Arduino 的过滤器，确保精确匹配。固件端使用 \texttt{Serial.write()} 响应命令，LED 即亮起。解读时，\texttt{transferOut} 将字节数组打包成 USB Bulk 包，Arduino 通过 \texttt{Serial.read()} 解析。这桥接了 Web 与微控制器，实现无 app 控制。\par
+高级案例涉及自定义温度传感器，使用 WebUSB + Web Workers 处理流数据，并集成 Chart.js 可视化。主线程请求设备后，postMessage 到 Worker 循环读取：\par
+\begin{lstlisting}[language=javascript]
+// 主线程
+const worker = new Worker('usb-worker.js');
+worker.postMessage({ device }); // 传递设备引用需代理
+
+// usb-worker.js
+self.onmessage = async (e) => {
+  const device = e.data.device;
+  while (true) {
+    const result = await device.transferIn(1, 8);
+    const temp = new Float32Array(result.data.buffer)[0];
+    self.postMessage({ temp });
+  }
+};
+\end{lstlisting}
+Worker 避免阻塞 UI，从端点 1 读取 8 字节（含 float 温度值），解析后发回主线程更新图表。这利用了 Transferable Objects 优化大数据流，适用于实时传感器仪表盘。在线 Demo 可参考 GoogleChromeLabs/webusb-samples 仓库的分支项目。\par
+\chapter{安全与最佳实践}
+WebUSB 内置用户许可模型，每次请求设备都需用户确认，防止恶意网站悄然访问硬件。Origin 隔离要求 HTTPS 环境，并遵守同一源策略，避免跨域滥用。潜在风险包括数据泄露或设备砖化，因此固件应实现命令校验，如 CRC 验证。\par
+性能优化依赖异步处理和 Buffer 管理。大数据传输分块进行，例如循环 \texttt{transferOut} 8KB 块，并使用 \texttt{ReadableStream} 封装流式接口。对于跨浏览器，可引入 webusb-polyfill 模拟 API。\par
+常见问题包括「No device selected」，通常因 filters 太严格，解决方案是放宽或移除；「Transfer failed」源于端点忙碌，需检查 \texttt{claimInterface}；权限被拒时，添加重试 UI。调试工具如 Chrome DevTools 的 USB 面板，能窥探设备描述符和传输日志。\par
+\chapter{局限性与未来展望}
+WebUSB 当前局限在于浏览器支持不全，尤其是 Safari 和 Firefox，以及 Windows 驱动冲突和 iOS 无支持。替代方案有 Web Serial 用于串口，或 Native Messaging 桥接原生代码。未来，WebUSB 2.0 可能增强 Isochronous 支持，与 WebAssembly 集成加速解析，并扩展到更多浏览器。PWA + WebUSB 将催生智能家居控制台，推动 Web 向硬件平台的演进。\par
+\chapter{结尾}
+WebUSB 将浏览器打造成硬件控制的核心平台，其用户许可、异步传输和标准兼容性是最大优势。通过本文，你已掌握从请求到数据循环的全流程。立即动手试试 Demo：连接你的 Arduino，点亮一盏灯，或监控传感器数据。欢迎分享你的项目到评论区，或订阅博客获取更多前沿教程。\par
+资源列表包括官方文档 https://wicg.github.io/webusb/、MDN https://developer.mozilla.org/en-US/docs/Web/API/WebUSB\_{}API、示例仓库 GoogleChromeLabs/webusb-samples，以及 Stack Overflow 和 WebUSB Slack 社区。WebUSB 不仅仅是 API，更是 Web 与物理世界融合的桥梁。快去浏览器中试试吧！\par

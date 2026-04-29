@@ -1,0 +1,162 @@
+\title{使用 Elixir 和 Phoenix 构建博客}
+\author{王思成}
+\date{Mar 26, 2026}
+\maketitle
+Elixir 作为一门建立在 Erlang 虚拟机之上的函数式语言，以其卓越的并发性和容错性著称。在构建高负载 Web 应用时，Elixir 的 Actor 模型能够轻松处理数千个并发连接，而无需担心线程安全问题，这使得它特别适合实时性要求高的博客系统。Phoenix 框架则充分利用这些优势，提供高性能的 Web 开发体验，特别是通过 Phoenix LiveView 实现无刷新实时交互，用户体验接近原生应用。与传统框架如 Ruby on Rails 或 Django 相比，Phoenix 在内存占用和响应速度上具有明显优势，同时 Phoenix Channels 支持 WebSocket 原生实时通信，避免了轮询带来的性能浪费。\par
+本文将指导你构建一个完整的博客系统，支持文章的创建、阅读、评论等 CRUD 操作，并集成 Markdown 编辑、标签管理和实时评论功能。最终成果是一个可扩展的多用户博客平台，能够处理高并发访问，并具备良好的 SEO 优化。读者需要具备 Elixir 基础语法知识、对 Phoenix 核心概念（如上下文和 LiveView）的了解，以及 PostgreSQL 数据库的基本使用经验。技术栈包括 Elixir 1.15+ 作为核心语言，Phoenix 1.7+ 作为 Web 框架，PostgreSQL 15+ 作为数据库，Ecto 3.10+ 作为 ORM，以及 Tailwind 3.x 用于前端样式。\par
+\chapter{项目初始化和环境搭建}
+首先安装 Elixir、Erlang 和 Phoenix。推荐使用 asdf 版本管理器来统一环境：在终端执行 \texttt{asdf install erlang latest} 和 \texttt{asdf install elixir latest}，然后 \texttt{asdf install nodejs latest} 以支持前端构建工具。安装 Phoenix 后，配置 PostgreSQL：创建数据库用户并启动服务，例如 \texttt{createdb blog\_{}dev}。这些步骤确保开发环境的一致性。\par
+创建 Phoenix 项目时，使用以下命令生成带有 LiveView 和 PostgreSQL 支持的骨架：\texttt{mix phx.new blog --live --database postgres}。这个命令会自动安装 esbuild 用于资产打包，并生成 LiveView 模板。执行 \texttt{cd blog} 后，安装依赖 \texttt{mix deps.get}，然后配置数据库连接。\par
+在 \texttt{config/dev.exs} 中设置数据库 URL，如 \texttt{config :blog, Blog.Repo, url: "ecto://postgres:postgres@localhost/blog\_{}dev"}。生产环境则在 \texttt{runtime.exs} 中使用系统环境变量动态加载配置，例如通过 \texttt{System.fetch\_{}env!("DATABASE\_{}URL")} 获取值。运行 \texttt{mix ecto.create \&{}\&{} mix ecto.migrate} 初始化数据库，此时项目已具备基本运行能力，访问 http://localhost:4000 即可看到欢迎页面。\par
+项目结构清晰，\texttt{lib/blog/} 目录下包含 \texttt{blog\_{}web} 用于控制器和视图，\texttt{blog} 包含应用逻辑，\texttt{blog\_{}contexts} 用于业务上下文封装。\texttt{assets/} 管理前端资源，\texttt{test/} 包含测试用例。这种 Hexagonal 架构设计便于测试和扩展。\par
+\chapter{数据库设计和模型定义}
+博客的核心是文章模型，我们设计 \texttt{Post} schema 来存储标题、正文、slug 等字段。首先运行 \texttt{mix phx.gen.schema Blog.Post posts title:string body:text slug:string user\_{}id:references:users tag\_{}ids:array:integer} 生成 schema 和迁移。生成的 \texttt{lib/blog/posts/post.ex} 文件定义了数据结构：\par
+\begin{lstlisting}[language=elixir]
+defmodule Blog.Posts.Post do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "posts" do
+    field :title, :string
+    field :body, :text
+    field :slug, :string
+    field :tags, {:array, :string}, default: []
+    belongs_to :user, Blog.Accounts.User
+    has_many :comments, Blog.Comments.Comment
+
+    timestamps()
+  end
+
+  def changeset(post, attrs) do
+    post
+    |> cast(attrs, [:title, :body, :slug, :tags])
+    |> validate_required([:title, :body])
+    |> Slug.slugify_slug()
+    |> assoc_constraint(:user)
+  end
+end
+\end{lstlisting}
+这段代码定义了 \texttt{posts} 表的 schema，其中 \texttt{field :title, :string} 表示标题为非空字符串，\texttt{field :body, :text} 用于存储 Markdown 正文，\texttt{field :slug, :string} 用于 SEO 友好的 URL。\texttt{belongs\_{}to :user} 建立用户关联，\texttt{has\_{}many :comments} 支持评论嵌套。\texttt{changeset/2} 函数处理数据验证：\texttt{cast/3} 提取允许字段，\texttt{validate\_{}required/2} 确保必填，\texttt{Slug.slugify\_{}slug()} 是自定义管道生成 slug（如将「我的第一篇文章」转为 \texttt{wo-de-di-yi-pian-wen-zhang}），\texttt{assoc\_{}constraint/2} 验证外键存在。这确保数据完整性。\par
+为标签系统创建关联迁移：\texttt{mix ecto.gen.migration create\_{}posts\_{}tags}，在迁移文件中添加 \texttt{create table(:posts\_{}tags) do ... add :post\_{}id, references(:posts) ... add :tag\_{}id, references(:tags)}。运行 \texttt{mix ecto.migrate} 应用变更。\par
+接下来创建上下文模块 \texttt{lib/blog/posts.ex}，封装 CRUD 操作：\par
+\begin{lstlisting}[language=elixir]
+defmodule Blog.Posts do
+  import Ecto.Query, warn: false
+  alias Blog.Repo
+  alias Blog.Posts.Post
+
+  def list_posts do
+    Repo.all(from p in Post, preload: [:user, :comments])
+  end
+
+  def get_post!(id), do: Repo.get!(Post, id) |> Repo.preload([:user, :comments])
+
+  def create_post(attrs \\ %{}, user) do
+    %Post{}
+    |> Post.changeset(attrs)
+    |> Ecto.Changeset.put_assoc(:user, user)
+    |> Repo.insert()
+  end
+end
+\end{lstlisting}
+\texttt{list\_{}posts/0} 使用 Ecto.Query 预加载关联数据，避免 N+1 查询问题。\texttt{get\_{}post!/1} 通过 \texttt{Repo.get!/2} 获取记录并预加载。\texttt{create\_{}post/2} 先应用 changeset，然后 \texttt{put\_{}assoc/3} 关联当前用户，最后插入数据库。这种封装隐藏了 Repo 操作细节，提供纯函数式接口。\par
+\chapter{路由和控制器实现}
+在 \texttt{router.ex} 中定义 LiveView 路由，使用资源嵌套设计：\par
+\begin{lstlisting}[language=elixir]
+defmodule BlogWeb.Router do
+  use BlogWeb, :router
+
+  scope "/", BlogWeb do
+    pipe_through :browser
+
+    live "/", PostLive.Index, :index
+    live "/posts/:post_slug", PostLive.Show, :show
+    live "/posts/new", PostLive.New, :new
+    live "/posts/:post_slug/edit", PostLive.Edit, :edit
+    live "/posts/:post_slug/comments", CommentLive.Index, :index
+  end
+end
+\end{lstlisting}
+这段路由配置管道 \texttt{:browser} 处理浏览器会话，\texttt{live "/posts/:post\_{}slug", PostLive.Show, :show} 使用 slug 参数匹配文章详情页，支持嵌套评论路由。Phoenix LiveView 通过 WebSocket 维持状态，实现实时更新。\par
+生成 LiveView 模块：\texttt{mix phx.gen.live Posts Post posts title:string body:text slug:string}。核心是 \texttt{lib/blog\_{}web/live/post\_{}live/index.ex}：\par
+\begin{lstlisting}[language=elixir]
+defmodule BlogWeb.PostLive.Index do
+  use BlogWeb, :live_view
+  alias Blog.Posts
+
+  @impl true
+  def mount(_params, _session, socket) do
+    {:ok, assign(socket, posts: Posts.list_posts())}
+  end
+
+  @impl true
+  def handle_event("search", %{"query" => query}, socket) do
+    posts = Posts.list_posts() |> Enum.filter(&String.contains?(&1.title, query))
+    {:noreply, assign(socket, posts: posts)}
+  end
+end
+\end{lstlisting}
+\texttt{mount/3} 在组件挂载时加载文章列表到 socket assigns。\texttt{handle\_{}event/3} 处理搜索事件，过滤标题匹配的帖子，并更新 socket 状态。LiveView 的状态管理使 UI 响应即时代码无需 JSON API。\par
+\chapter{前端界面开发（Phoenix LiveView）}
+索引页面模板 \texttt{index.html.heex} 使用 Tailwind 类渲染列表：\texttt{<div class="grid grid-cols-1 md:grid-cols-2 gap-4"> <\%{}= for post <- @posts do \%{}> <div class="p-6 bg-white rounded-lg shadow"> <h2 class="text-2xl font-bold"><\%{}= post.title \%{}></h2> </div> <\%{} end \%{}> </div>}。这创建响应式网格布局，支持暗黑模式通过 \texttt{dark:bg-gray-800} 类切换。\par
+详情页面 \texttt{show.html.heex} 集成 Markdown 渲染和实时评论。创建/编辑页面使用 Quill 编辑器，通过 JS hooks 实现实时预览：\texttt{@impl true def mount(\_{}, \_{}, socket), do: \{{}:ok, assign(socket, form: to\_{}form(\%{}Post\{{}\}{}))\}{}} 处理表单状态。\par
+\chapter{高级特性实现}
+集成 Earmark 渲染 Markdown，在 \texttt{lib/blog\_{}web/components/post\_{}component.ex} 中定义：\par
+\begin{lstlisting}[language=elixir]
+defmodule BlogWeb.PostHTML do
+  use BlogWeb, :html
+
+  embed_templates "post_html/*"
+
+  def render_markdown(body) do
+    {:ok, html, _} = Earmark.as_html(body, code_class_prefix: "language-elixir")
+    {:safe, html}
+  end
+end
+\end{lstlisting}
+\texttt{Earmark.as\_{}html/2} 将 Markdown 转为 HTML，\texttt{code\_{}class\_{}prefix} 添加语法高亮类，\texttt{\{{}:safe, html\}{}} 标记为安全内容避免转义。在模板中调用 \texttt{<div class="prose"><\%{}= render\_{}markdown(@post.body) \%{}></div>}。\par
+标签系统在 changeset 中自动生成：使用 \texttt{NimbleParsec} 解析 body 提取关键词。评论使用 Channels 实时推送：\par
+\begin{lstlisting}[language=elixir]
+defmodule BlogWeb.CommentLive do
+  def handle_event("create", %{"comment" => params}, socket) do
+    case Comments.create_comment(params, socket.assigns.post) do
+      {:ok, comment} ->
+        Phoenix.PubSub.broadcast(Blog.PubSub, "comments:#{socket.assigns.post.id}", {:new_comment, comment})
+        {:noreply, assign(socket, comments: [comment | socket.assigns.comments])}
+    end
+  end
+end
+\end{lstlisting}
+\texttt{Phoenix.PubSub.broadcast/3} 广播新评论，订阅端通过 \texttt{handle\_{}info(\{{}:new\_{}comment, comment\}{}, socket)} 更新 UI，实现无刷新评论流。\par
+用户认证使用 \texttt{phx.gen.auth}，生成 Pow 集成，支持会话管理。\par
+\chapter{SEO 和性能优化}
+使用 phoenix\_{}seo 生成元标签：在 \texttt{show.html.heex} 添加 \texttt{<meta name="description" content=\{{}@post.excerpt\}{} />}。创建 sitemap 通过任务 \texttt{mix ecto.gen.task GenerateSitemap} 定期生成 XML。\par
+性能上，为 slug 添加唯一索引 \texttt{create index(:posts, [:slug])}。使用 ETS 缓存热门文章：\texttt{:ets.new(:post\_{}cache, [:named\_{}table])}，在上下文读取时先查缓存。\par
+\chapter{测试和质量保证}
+单元测试示例验证上下文：\par
+\begin{lstlisting}[language=elixir]
+defmodule Blog.PostsTest do
+  use Blog.DataCase
+
+  describe "list_posts/0" do
+    test "returns all posts" do
+      post = fixture(:post)
+      assert Posts.list_posts() == [post]
+    end
+  end
+end
+\end{lstlisting}
+\texttt{fixture/1} 是 ExMachina 生成的工厂函数，\texttt{DataCase} 提供数据库沙箱。LiveView 测试使用 \texttt{floki} 断言 DOM，E2E 通过 Wallaby 模拟浏览器。\par
+\chapter{部署和生产环境}
+Dockerfile 示例：\par
+\begin{lstlisting}[language=dockerfile]
+FROM elixir:1.15
+RUN mix local.hex --force && mix local.rebar --force
+COPY . .
+RUN mix deps.get && mix compile
+CMD ["mix", "phx.server"]
+\end{lstlisting}
+部署到 Fly.io：\texttt{fly launch} 自动检测 Elixir。生产配置使用 Distillery 发布，集成 Sentry 日志和 Prometheus 监控。CI/CD 通过 GitHub Actions 运行 \texttt{mix test \&{}\&{} mix release}。\par
+\chapter{扩展和未来改进}
+未来可添加多用户通过 Guardian JWT，邮件订阅用 Swoosh，GraphQL API 用 Absinthe，支持 PWA 通过 manifest.json。\par
+这个博客系统展示了 Elixir/Phoenix 的强大能力，从并发到实时交互一应俱全。完整源码见 GitHub 仓库。进一步学习推荐 Elixir School 和 Phoenix 官方文档。常见问题如 slug 冲突可通过唯一约束解决。\par
