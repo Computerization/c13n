@@ -146,6 +146,7 @@ def pdfgenr(post):
                 print(f"   LaTeX failed: {post} (no PDF produced); skipping")
                 shutil.rmtree(tmp_dir, ignore_errors=True)
                 return False
+        os.makedirs(pbl_dir + post, exist_ok=True)
         shutil.copy(tmp_dir + "index.tex", pbl_dir + post + "/index.tex")
         shutil.copy(tmp_dir + "index.pdf", pbl_dir + post + "/index.pdf")
         shutil.rmtree(tmp_dir)
