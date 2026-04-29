@@ -211,6 +211,11 @@ def batch():
                         else:
                                 print(f"    Removing obsolete: {bch_id} #{existing_hsh} -> #{hsh}")
                                 os.remove(f"{bch_dir}compilation_{bch_id}_{existing_hsh}.pdf")
+                # Skip batches that include a post whose individual compile failed
+                missing = [posts[i] for i in bch_range if not os.path.exists(f"{pbl_dir}{posts[i]}/index.tex")]
+                if missing:
+                        print(f"      Skipping batch: {bch_id} #{hsh} (missing tex for {', '.join(missing)})")
+                        continue
                 print(f"     Processing batch: {bch_id} #{hsh}")
                 filename = f"compilation_{bch_id}_{hsh}"
                 # Writing index.tex to be compiled
@@ -225,6 +230,10 @@ def batch():
                 ])
                 # Compiling and cleaning
                 texcomp("drvmly.ltx")
+                if not os.path.exists(tmp_dir + "index.pdf"):
+                        print(f"   LaTeX failed for batch: {bch_id}; skipping")
+                        shutil.rmtree(tmp_dir, ignore_errors=True)
+                        continue
                 shutil.copy(tmp_dir + "index.pdf", bch_dir + filename.lower() + ".pdf")
                 shutil.rmtree(tmp_dir)
 
