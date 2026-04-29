@@ -142,9 +142,14 @@ def pdfgenr(post):
         metainj(tmp_dir + "index.tex")
         texpost(tmp_dir + "index.tex")
         texcomp("drvpst.ltx")
+        if not os.path.exists(tmp_dir + "index.pdf"):
+                print(f"   LaTeX failed: {post} (no PDF produced); skipping")
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+                return False
         shutil.copy(tmp_dir + "index.tex", pbl_dir + post + "/index.tex")
         shutil.copy(tmp_dir + "index.pdf", pbl_dir + post + "/index.pdf")
         shutil.rmtree(tmp_dir)
+        return True
 
 def post():
         # Compiles each post, specifically converts the .md file to a .tex file
@@ -165,10 +170,9 @@ def post():
                         print(f"        Skipping post: {post} #{hsh}")
                         continue
                 print(f"      Processing post: {post}")
-                # Write markdown hash to file `sha256`
-                File(pbl_dir + post + "/sha256").write(hsh)
-                # Compile PDF
-                pdfgenr(post)
+                # Compile PDF; only record the hash on success so failed posts are retried
+                if pdfgenr(post):
+                        File(pbl_dir + post + "/sha256").write(hsh)
         # Cleaning
         os.chdir(utl_dir)
         print("          Cleaning up:")
