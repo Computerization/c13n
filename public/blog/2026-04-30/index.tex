@@ -1,0 +1,72 @@
+\title{SQLite 中的全文本搜索}
+\author{杨其臻}
+\date{Apr 30, 2026}
+\maketitle
+在构建个人博客搜索功能时，你是否厌倦了 \texttt{LIKE} 查询的低效？想象一下，用户输入「SQLite FTS」时，数据库需要扫描数万行数据，响应时间动辄数百毫秒，甚至导致 App 卡顿。SQLite 的全文本搜索模块（FTS）能将搜索速度提升 100 倍以上，让结果瞬间呈现。这不仅仅是性能优化，更是用户体验的革命。SQLite FTS 是内置于轻量级数据库的核心功能，无需外部依赖，即可在移动 App、嵌入式系统或 Web 后端实现高效全文搜索。它特别适合那些不需要部署复杂搜索引擎如 Elasticsearch 的场景，比如离线笔记应用、桌面软件或 IoT 设备的数据检索。本文将带你从零上手 FTS，涵盖基础概念、实际操作、高级特性到最佳实践。读完后，你能立即在项目中应用，实现模糊匹配、高亮显示和相关性排序。先决条件仅需 SQLite 3.9+ 版本和基本 SQL 知识。我们从基础入手，一步步解锁 FTS 的潜力。\par
+\chapter{SQLite FTS 基础}
+SQLite FTS 提供了一系列模块，包括 FTS3、FTS4 和最现代的 FTS5。其中 FTS5 是推荐选择，因为它支持更多高级功能，如自定义分词器、外部内容表和高效的增量合并，同时兼容旧版本语法。这些模块以虚拟表形式实现，与普通表不同，FTS 虚拟表不存储原始数据，而是构建倒排索引来加速文本匹配查询。这种机制让 FTS 专为搜索优化，而非通用数据存储。\par
+FTS 的核心是虚拟表机制。当你创建 FTS 表时，SQLite 会生成一个特殊的表视图，底层维护索引结构。例如，执行以下语句创建一个简单的 FTS5 虚拟表：\par
+\begin{lstlisting}[language=sql]
+CREATE VIRTUAL TABLE articles USING fts5(title, content);
+\end{lstlisting}
+这段代码的解读如下：\texttt{CREATE VIRTUAL TABLE} 关键字声明这是一个虚拟表，而不是物理表；\texttt{articles} 是表名；\texttt{USING fts5} 指定使用 FTS5 模块；括号内列出要索引的列 \texttt{title} 和 \texttt{content}。创建后，该表支持高效的 \texttt{MATCH} 查询，但不直接存储数据——插入数据时，FTS 会自动构建词项索引。不同于普通表，FTS 表有特殊限制，如不支持 \texttt{ALTER TABLE} 修改结构，但这换来了极致的搜索速度。\par
+理解 FTS 还需要掌握几个核心概念。分词器（Tokenizer）负责将文本拆分成词项，默认使用 \texttt{unicode61} tokenizer，它能处理多语言包括中文，但对于中文搜索，可切换到 \texttt{chinese} 或自定义。举例来说，对内容 \texttt{'SQLite FTS 教程'} 应用分词后，可能得到 \texttt{["SQLite", "FTS", "教程"]} 等词项数组，这些词项被索引以支持快速查找。\texttt{MATCH} 是 FTS 专属查询操作符，用于匹配这些词项，例如 \texttt{SELECT * FROM articles WHERE articles MATCH 'SQLite FTS';}，这里的 \texttt{articles} 是表名或列名，匹配查询字符串会查找包含这些词项的行。排名（Ranking）通过 \texttt{bm25()} 函数计算相关性分数，默认使用 \texttt{ORDER BY rank;} 排序，\texttt{rank} 是内置列，返回 BM25 算法的得分，帮助将最相关的结果置顶。\par
+试试看：创建一个 FTS 表，插入几行测试数据，然后运行 \texttt{MATCH} 查询观察结果差异。\par
+\chapter{快速上手：创建和查询}
+上手 FTS 从数据插入开始，使用标准的 \texttt{INSERT} 语法向虚拟表添加内容。FTS 会自动解析文本、构建索引，无需手动维护。例如：\par
+\begin{lstlisting}[language=sql]
+INSERT INTO articles(title, content) VALUES 
+('SQLite FTS 入门', '本文介绍 SQLite 的全文本搜索功能，帮助开发者快速实现高效搜索。'),
+('数据库优化技巧', 'FTS 可以显著提升搜索性能，尤其在 LIKE 查询失效的场景下。');
+\end{lstlisting}
+这段代码解读：第一行插入标题为「SQLite FTS 入门」的文章，内容描述 FTS 功能；第二行插入另一篇关于优化的文章。每个值对应表定义的列，FTS5 会立即对 \texttt{title} 和 \texttt{content} 进行分词并索引。注意，批量插入时结合事务可进一步提升性能，如包裹在 \texttt{BEGIN TRANSACTION;} 和 \texttt{COMMIT;} 中，避免频繁的索引重建。对于大数据集，建议分批提交以平衡内存使用。\par
+查询使用 \texttt{MATCH} 操作符，支持丰富语法。基本形式是 \texttt{WHERE table MATCH 'query'}，它隐式使用 AND 逻辑匹配所有词项。更高级的包括短语搜索，用双引号包围精确短语；OR/AND/NOT 逻辑运算符；\texttt{*} 通配符匹配前缀；以及 \texttt{NEAR} 操作符查找邻近词。以下是多种查询示例：\par
+\begin{lstlisting}[language=sql]
+-- 精确短语搜索
+SELECT * FROM articles WHERE articles MATCH '"SQLite FTS"';
+-- OR 查询：匹配任一词项
+SELECT * FROM articles WHERE articles MATCH 'SQLite OR FTS';
+-- 前缀搜索：匹配以 SQL 开头的词
+SELECT * FROM articles WHERE articles MATCH 'SQL*';
+\end{lstlisting}
+解读第一条：双引号确保「SQLite FTS」作为一个短语出现，所有词顺序一致才匹配。第二条使用 \texttt{OR}，返回包含 SQLite 或 FTS 的行，适合宽松搜索。第三条 \texttt{*} 通配符让查询扩展到如「SQLite*」等变体，非常适合拼写不确定的场景。这些查询利用倒排索引，速度远超 \texttt{LIKE '\%{}keyword\%{}'}，后者需全表扫描。\par
+性能对比显而易见：在 10 万行数据上，\texttt{LIKE} 查询可能耗时 500ms，而 FTS \texttt{MATCH} 仅需 5ms，提升 100 倍。这得益于索引构建过程：插入时 FTS 创建小段索引（segments），后台自动合并。查询时直接扫描索引，无需读原始数据。索引维护是自动的，但大表可手动触发 \texttt{PRAGMA fts5\_{}articles\_{}optimize;} 加速。\par
+试试看：插入 100 行模拟数据，对比 \texttt{LIKE} 和 \texttt{MATCH} 的执行时间，使用 \texttt{.timer ON} 在 SQLite CLI 中测量。\par
+\chapter{FTS5 高级特性}
+FTS5 的强大在于可配置分词器，内置选项包括 \texttt{simple}（空格分词）、\texttt{porter}（英文词干提取）、\texttt{unicode61}（Unicode 规范化）和 \texttt{chinese}（中文专用）。中文搜索特别推荐 \texttt{chinese}，它基于词库智能分词，避免简单字符拆分导致的低效。创建时通过 \texttt{tokenize} 参数指定：\par
+\begin{lstlisting}[language=sql]
+CREATE VIRTUAL TABLE docs USING fts5(content, tokenize='chinese');
+\end{lstlisting}
+解读：\texttt{docs} 表仅索引 \texttt{content} 列；\texttt{tokenize='chinese'} 启用中文分词器，插入如「SQLite 全文本搜索」时，会识别「SQLite」「全文本」「搜索」等词项，而非逐字拆分。这大大提升中文匹配精度。对于复杂需求，可用 JSON 配置自定义 tokenizer，如 \texttt{tokenize='porter unicode61 remove\_{}diacritics 2'} 组合多个过滤器。\par
+排序和高亮是 FTS5 的亮点。默认 \texttt{rank} 列使用 BM25 算法计算分数，可自定义参数：\texttt{bm25(k1, b)} 中 \texttt{k1} 控制词频权重（默认 1.2），\texttt{b} 控制文档长度归一化（默认 0.75）。高亮用 \texttt{highlight(table, column, start\_{}tag, end\_{}tag)} 函数标记匹配词：\par
+\begin{lstlisting}[language=sql]
+SELECT title, highlight(articles, 0, '<b>', '</b>') AS snippet
+FROM articles WHERE articles MATCH 'FTS'
+ORDER BY bm25(articles, 1.2, 0.75);
+\end{lstlisting}
+解读：查询匹配「FTS」的行；\texttt{highlight(articles, 0, '<b>', '</b>')} 高亮第一个列（索引 0 为 \texttt{title}，但实际常用于 \texttt{content} 需调整）；\texttt{0} 表示列索引，从 0 开始；返回 HTML 标签包裹的片段，如 \texttt{<b>FTS</b>}。\texttt{ORDER BY bm25(articles, 1.2, 0.75)} 自定义排名，增加长度惩罚以青睐简短匹配。结果集完美适合前端展示。\par
+外部内容表避免数据重复：FTS 只存索引，内容指向普通表。通过 \texttt{content=table, content\_{}rowid} 关联：\par
+\begin{lstlisting}[language=sql]
+CREATE TABLE articles (id INTEGER PRIMARY KEY, title TEXT, content TEXT);
+CREATE VIRTUAL TABLE fts_articles USING fts5(content=articles, content_rowid);
+\end{lstlisting}
+解读：先建普通表 \texttt{articles}；FTS 表 \texttt{fts\_{}articles} 的 \texttt{content=articles} 指定外部内容来源，\texttt{content\_{}rowid} 链接 \texttt{id} 列。插入/更新普通表后，用 \texttt{INSERT INTO fts\_{}articles(articles) VALUES('rowid');} 触发索引同步；查询时 \texttt{SELECT * FROM fts\_{}articles WHERE fts\_{}articles MATCH 'query';} 自动拉取外部内容。这种模式节省 50\%{} 存储，适合大文本。\par
+更新和删除需谨慎：直接 \texttt{UPDATE fts\_{}articles SET content='new';} 会重建索引，频繁操作导致性能衰退。推荐外部表 + 触发器同步，或用 \texttt{DELETE} 标记无效行，后台用 \texttt{PRAGMA optimize;} 合并段落，公式为合并成本 $\text{cost} = \sum \log(\text{segment size})$，优化后索引更紧凑。\par
+试试看：配置中文分词器，插入中英文混合数据，测试高亮输出。\par
+\chapter{实际应用与最佳实践}
+实际中，模糊搜索常用 \texttt{NEAR/5(词 1, 词 2)} 查找 5 词内邻近匹配，或结合 \texttt{*} 通配符。多列搜索指定 \texttt{column MATCH 'query'} 或联合列如 \texttt{title:FTS OR content:search}。分页则用 \texttt{ORDER BY rank LIMIT 10 OFFSET 20}，确保相关性排序稳定。实时索引通过触发器实现：在普通表上建 \texttt{CREATE TRIGGER articles\_{}ai AFTER INSERT ON articles BEGIN INSERT INTO fts\_{}articles(rowid, content) VALUES (new.rowid, new.content); END;} 自动同步。\par
+性能优化聚焦合并策略：\texttt{PRAGMA fts5\_{}automerge=16;} 设置自动合并小段阈值至 16MB；\texttt{delete=all} 模式预删除无效索引；\texttt{incrimerge=10} 增量合并大段。内存调优用 \texttt{PRAGMA cache\_{}size=-64000;} 分配 64MB 缓存，避免频繁 IO。陷阱包括大文本块（>1MB 拆分）和频繁小更新（批量化）。工具上，DB Browser for SQLite 可视化 FTS 表；集成示例在 Node.js 用 \texttt{better-sqlite3}：\par
+\begin{lstlisting}[language=javascript]
+const db = new Database('test.db');
+db.exec("CREATE VIRTUAL TABLE IF NOT EXISTS docs USING fts5(content, tokenize='chinese')");
+const stmt = db.prepare("INSERT INTO docs (content) VALUES (?)");
+stmt.run("SQLite FTS 教程");
+const rows = db.prepare("SELECT * FROM docs WHERE docs MATCH ? ORDER BY rank").all("FTS");
+\end{lstlisting}
+这段伪代码展示绑定用法，Python 的 \texttt{sqlite3} 类似。\par
+试试看：实现触发器同步，模拟实时搜索。\par
+\chapter{局限性与替代方案}
+FTS 虽强大，但不支持复杂查询如地理空间搜索或分布式扩展，也不宜超大数据集（>1GB 时合并开销大）。简单关键词匹配够用时，\texttt{LIKE} 更轻量；需 NLP 如语义搜索时，转向外部工具。替代品中，MeiliSearch 提供 REST API 易集成，Typesense 强调速度，Elasticsearch 胜在规模，但均需服务器，对比 FTS 的零依赖形成鲜明反差。\par
+\chapter{完整 Demo 项目}
+完整 Demo 在 GitHub 仓库 \href{https://github.com/example/sqlite-fts5-demo}{sqlite-fts5-demo}（虚构链接，实际可自建）。步骤：运行 \texttt{init.sql} 建表并插入 100 条维基摘录；执行 \texttt{query.sql} 测试 MATCH、highlight；下载 \texttt{demo.db} 直接导入 SQLite 工具探索索引内部。\par
+FTS 上手仅三步：创建虚拟表、插入数据、MATCH 查询。立即实践吧，你的 App 搜索将焕然一新！欢迎评论分享经验。资源包括官方文档 https://www.sqlite.org/fts5.html、《SQLite Internals》书籍，以及相关视频教程。FTS 是 SQLite 的隐藏宝石，解锁它，你的搜索如虎添翼！\par
