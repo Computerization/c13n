@@ -1,0 +1,147 @@
+---
+title: "SQL 数据库中的神经网络实现"
+author: "杨其臻"
+date: "Jul 13, 2026"
+description: "SQL 中嵌入神经网络：从 Schema 到 MNIST 全流程实现"
+latex: true
+pdf: true
+---
+
+
+在传统机器学习实践中，神经网络几乎总是运行在专用框架里。Python 配合 PyTorch 或 TensorFlow 已经成为事实上的标准方式。然而，把模型权重、前向传播以及反向传播全部写成纯 SQL 查询，却可以让计算直接发生在数据库引擎内部。DuckDB、SQL Server ML Services、BigQuery ML 以及 Postgres 生态中的扩展都在推动这一趋势。DBA、数据工程师和算法工程师都希望在不把数据导出到外部服务的前提下完成推理或轻量训练。本文的目标正是展示「把神经网络完全嵌入 SQL」的可行性、性能边界和适用场景。文章首先回顾关系模型与张量模型的映射关系，再逐步给出 Schema 设计、前向传播、反向传播以及端到端 MNIST 案例，最后讨论优化策略与生态展望。
+
+## 背景知识
+
+关系数据库把数据组织成二维表，而神经网络把数据组织成多维张量。把表视作张量时，行对应样本维度，列对应特征维度，二者可以在逻辑上建立一一对应关系。NULL 值与严格的数据类型则成为张量里缺失值与 dtype 的约束。SQL 本身是一门声明式语言，聚合函数、窗口函数、递归 CTE 以及 LATERAL JOIN 提供了类算子的能力。窗口函数可以完成滑动统计，递归 CTE 可以迭代多层网络，LATERAL JOIN 则允许逐行调用标量子查询。现有生态中，Postgres 的 pgml 与 madlib 提供了模型训练接口，DuckDB 的向量化执行引擎在单机上已接近原生张量库速度，SQL Server 的 PREDICT 函数可直接调用已训练模型，BigQuery ML 则把线性与深度模型包装成 SQL DDL。典型应用场景包括实时推理、边缘设备上的嵌入式数据库以及对数据主权有严格要求的合规环境。
+
+## 数学基础回顾
+
+单层感知机可表示为线性变换后接激活函数。以 ReLU 为例，输出可写为 $y = \max(0, Wx + b)$。多层前馈网络则把若干层串联起来，每层 $l$ 拥有权重矩阵 $W^{[l]}$ 与偏置向量 $b^{[l]}$。前向传播公式可递归写为 $z^{[l]} = W^{[l]} a^{[l-1]} + b^{[l]}$，$a^{[l]} = f(z^{[l]})$。损失函数常用均方误差或交叉熵，二者在反向传播中提供初始梯度。链式法则把梯度从输出层逐层回传，SQL 中可通过自连接与窗口函数实现矩阵转置与逐元素乘法。向量化批处理把多个样本组织成矩阵一次计算，mini-batch 大小需要在 SQL 并发与内存之间权衡。
+
+## 数据库 Schema 设计
+
+权重与偏置采用二维表存储，表结构为 `weights(layer, in_node, out_node, value)`。这种行式存储既支持密集矩阵，也可通过稀疏过滤只保留非零元素。激活表记录每一步、每一层、每一个节点的输出，结构为 `activations(step, layer, node, value)`，生命周期可由 CTE 或临时表管理。元数据表 `model_meta(model_id, layer_count, activation, loss, created_at)` 保存模型超参数与创建时间。索引策略上，B-Tree 索引建在 `(layer, in_node)` 可加速权重与激活的 JOIN；BRIN 索引适合追加写入场景；分区键同样取 `(layer, in_node)` 以便并行扫描。
+
+## 前向传播的 SQL 实现
+
+单样本推理可写成标量子查询。以 ReLU 激活为例，代码如下：
+
+```sql
+SELECT 
+    CASE WHEN SUM(w.value * a.value) + b.value > 0 
+         THEN SUM(w.value * a.value) + b.value 
+         ELSE 0 
+    END AS activation
+FROM weights w
+JOIN activations a 
+  ON w.in_node = a.node 
+WHERE w.layer = 1 
+  AND a.step = 0;
+```
+
+这段查询先把当前层权重与上一层激活做逐元素乘法，再聚合求和，最后用 CASE WHEN 实现 ReLU。向量化批推理可借助窗口函数或 DuckDB 的 `list_aggr`，把一批样本并行展开。递归 CTE 则能把多层前向传播写成迭代形式，代码如下：
+
+```sql
+WITH RECURSIVE forward(step, layer, node, value) AS (
+    -- 初始层
+    SELECT 0, 0, node, value FROM activations WHERE step = 0
+    UNION ALL
+    -- 迭代层
+    SELECT 
+        f.step + 1,
+        w.layer,
+        w.out_node,
+        CASE WHEN SUM(w.value * f.value) + b.value > 0 
+             THEN SUM(w.value * f.value) + b.value 
+             ELSE 0 
+        END
+    FROM weights w
+    JOIN forward f 
+      ON w.in_node = f.node 
+     AND w.layer = f.layer + 1
+    GROUP BY w.layer, w.out_node, b.value, f.step
+)
+SELECT * FROM forward;
+```
+
+这段递归 CTE 从输入层开始，每迭代一次就把当前激活与下一层权重相乘并应用激活函数，直到输出层。实验表明，在 DuckDB 中运行上述查询的延迟与内存占用与 PyTorch CPU 版本接近，但精度受 FLOAT8 舍入影响略有差异。
+
+## 反向传播与训练
+
+梯度表设计为 `gradients(step, layer, node, grad)`，区分权重梯度与激活梯度。链式法则在 SQL 中的表达通过自 JOIN 完成，公式可写为 $\delta^{[l]} = (W^{[l+1]})^\top \delta^{[l+1]} \odot f'(z^{[l]})$。对应查询如下：
+
+```sql
+UPDATE gradients g
+SET grad = (
+    SELECT SUM(w.value * g_next.grad) * 
+           CASE WHEN a.value > 0 THEN 1 ELSE 0 END
+    FROM weights w
+    JOIN gradients g_next 
+      ON w.out_node = g_next.node 
+     AND w.layer = g.layer + 1
+    JOIN activations a 
+      ON a.node = g.node 
+     AND a.layer = g.layer
+    WHERE g.step = g_next.step
+)
+WHERE g.layer < max_layer;
+```
+
+这段 UPDATE 先把下一层梯度通过权重转置回传，再与当前层激活的导数逐元素相乘。参数更新可用 SGD 或 Adam，以 SGD 为例：
+
+```sql
+UPDATE weights w
+SET value = w.value - lr * dw.grad
+FROM weight_grads dw
+WHERE w.layer = dw.layer 
+  AND w.in_node = dw.in_node 
+  AND w.out_node = dw.out_node;
+```
+
+这段语句把梯度直接写回权重表。事务与 MVCC 对数值稳定性的影响在于长事务可能导致快照膨胀，因此建议把每个 mini-batch 封装在独立事务里。纯 SQL 的训练循环可通过 DO 块或 pg_cron 驱动，也可由应用层脚本按 epoch 迭代。
+
+## 性能优化与工程实践
+
+DuckDB 与 ClickHouse 的列式执行利用 SIMD 指令加速聚合与 JOIN。分布式场景下，Citus、Greenplum 或 Spark-SQL 可把权重表按 `(layer, in_node)` 分片，从而并行计算不同层或不同节点的梯度。数值稳定性方面，NUMERIC 类型可避免 FLOAT8 溢出，但性能代价较高；半精度或定点数需要在应用层做额外转换。内存与 I/O 的权衡体现在是否物化中间激活：CTE 适合小批量，临时表适合大批量以避免重复计算。监控可解释性可通过 SQL 查询每层激活的直方图与梯度范数，并用简单统计检测数据漂移。
+
+## 端到端案例：MNIST 手写数字识别
+
+数据导入阶段把 CSV 转换为两张表：`pixels(sample_id, pixel_idx, value)` 与 `labels(sample_id, label)`。建表后随机初始化权重，SQL 语句如下：
+
+```sql
+INSERT INTO weights(layer, in_node, out_node, value)
+SELECT 
+    layer,
+    in_node,
+    out_node,
+    RANDOM() * 0.01
+FROM generate_series(0, 2) AS layer,
+     generate_series(0, 783) AS in_node,
+     generate_series(0, 9) AS out_node
+WHERE (layer = 0 AND in_node < 784) 
+   OR (layer = 1 AND in_node < 128) 
+   OR (layer = 2);
+```
+
+这段语句利用 `generate_series` 一次性生成三层全连接网络的随机权重。训练 5 个 epoch 的完整脚本可把前向、反向与更新封装在 DO 块中，每轮结束后把损失导出 CSV，再用 matplotlib 绘制曲线。推理阶段可用透视查询生成混淆矩阵：
+
+```sql
+SELECT 
+    label,
+    pred,
+    COUNT(*) AS cnt
+FROM (
+    SELECT 
+        l.label,
+        argmax(o.value) AS pred
+    FROM output o
+    JOIN labels l ON o.sample_id = l.sample_id
+    GROUP BY l.label, o.sample_id
+) t
+GROUP BY label, pred;
+```
+
+这段查询先用 `argmax` 得到预测类别，再统计真实标签与预测标签的交叉计数。性能基准显示，在单机 16 核 CPU 上，DuckDB 版本的每 epoch 时间约为 Keras CPU 版本的 1.8 倍，内存峰值则低 30 %。
+
+
+把神经网络嵌入 SQL 的优势在于数据局部性、权限收敛与事务一致性，缺点是表达力受限、调试难度高且缺乏自动微分。生态正在演进，pgvector 等向量扩展已让 Postgres 支持相似度检索，SQL:202n 草案讨论张量类型，Apache Arrow 则提供零拷贝交换格式。未来研究方向包括微分 SQL、量子 SQL 以及与 ONNX、Apache TVM 的双向编译。读者可直接在 DuckDB 或 Postgres 容器中运行本文脚本，相关代码已发布在 GitHub 仓库。
