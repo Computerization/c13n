@@ -1,0 +1,61 @@
+\title{多模型编排技术在生产环境中的实践与优化}
+\author{王思成}
+\date{Sep 04, 2026}
+\maketitle
+\chapter{为什么需要多模型编排}
+在真实业务中，单一大模型往往无法同时满足低延迟、高准确率和低成本三项指标。大型模型在复杂推理任务上表现优异，但首包延迟和每千 Token 成本都较高；小型模型响应迅速，却在长文本理解和多步推理场景下容易丢步或幻觉。RAG 问答、Agent 工具调用、多模态理解以及线上 A/B 测试等场景，都需要把不同能力的模型串联或并行起来，才能在业务约束下取得最优解。\par
+\chapter{编排与单模型调用的核心差异}
+单模型调用本质上是「请求-响应」的一次函数式映射，而编排则在调用链路上增加了路由、缓存、回退、聚合等中间环节。编排系统需要管理不同模型的 Schema、Tokenizer、流式协议差异，同时还要在运行时根据 Prompt 长度、领域分类、Token 预算、SLO 等特征动态选路。最终目标是把「模型即资源」抽象成「服务即拓扑」，让上层业务只关心任务完成度，而不必关心底层模型的异构细节。\par
+\chapter{常见编排拓扑}
+串行 Pipeline 适合需要逐步精炼的场景，例如先用轻量模型生成候选，再用大模型重排序或改写；并行 Ensemble 则通过多模型投票或加权平均来降低单点错误率；动态路由基于 Prompt 的 Embedding 向量、领域分类器或在线强化学习策略，把请求分发到最合适的模型；分层级联通常把「先小模型过滤、后大模型精排、最后工具调用」三步串在一起，既控制成本，又保证关键路径的准确率。\par
+\chapter{关键组件}
+Router 或 Gatekeeper 负责实时决策；Context \&{} Memory Manager 在长会话中维护跨模型的状态一致性；Cost \&{} Latency Budget Controller 在调用前做预算校验，超预算时触发降级或拒绝；Observability Layer 则把 TraceID、Token 数、耗时、成本等指标统一打点，便于事后分析和漂移检测。\par
+\chapter{异构模型的集成难点}
+OpenAI、Anthropic 与本地 vLLM 的接口在流式分块格式、最大上下文长度、Rate-limit 维度上各不相同。Tokenizer 的差异还会导致相同语义的 Prompt 在不同模型上被切分成不同数量的 Token，从而影响成本与延迟。解决思路是建立统一的「ChatCompletion 兼容层」，在这一层把各模型的流式事件统一抽象为「delta + finish\_{}reason」，并用令牌桶算法对 Rate-limit 做前置熔断。\par
+\chapter{一致性与可回滚}
+多模型输出对齐需要定义公共的结构化 Schema，例如 JSON 字段白名单或正则校验器。当新模型上线时，先用「影子流量」把真实请求同时发给新、旧模型，对比结构化字段的差异率。只有当差异率低于阈值且人工抽检通过，才把新模型切为 Primary，并保留至少一个版本的快照以便快速回滚。\par
+\chapter{最小可行 Pipeline 示例}
+一个最简 Pipeline 可抽象为四个顺序节点：Router、NodeA、NodeB、Aggregator。Router 根据 YAML 配置决定调用哪条模型；NodeA 负责 Prompt 改写或 Embedding；NodeB 调用主模型并做流式回传；Aggregator 把多路结果聚合成最终响应。配置示例片段如下：\par
+\begin{lstlisting}[language=yaml]
+pipeline:
+  nodes:
+    - name: router
+      type: rule
+      routes:
+        - if: "len(prompt) > 2000"
+          target: large_model
+        - else:
+          target: small_model
+    - name: large_model
+      type: llm
+      model: gpt-4-1106-preview
+      timeout_ms: 30000
+      fallback: small_model
+\end{lstlisting}
+这段配置把长度大于 2000 的请求路由给大模型，否则走小模型；若大模型超时，则自动回退到小模型。代码里用 Pydantic 解析 YAML，再把节点组装成有向无环图，执行时按拓扑序依次调用。\par
+\chapter{单元测试与影子流量}
+测试阶段可把生产日志中的 Prompt 回放一遍，计算 ROUGE-L 与 Embedding 相似度，量化新策略对输出质量的影响。影子流量则是在真实链路之外再起一条并行链路，把 5\%{} 的请求同时发给新、旧模型，但只把旧模型结果返回给用户，新模型结果仅用于离线对比。\par
+\chapter{路由策略的演进}
+静态规则适合冷启动阶段，例如按 Prompt 长度、关键词或用户等级做分流。进阶方案是用轻量分类器（例如 DistilBERT）预测任务难度或领域，再把分类结果映射到模型 ID。最终形态是在线学习：用上下文 Bandit 或强化学习，根据实时 Reward（任务成功率、用户点赞）动态调整路由概率。\par
+\chapter{缓存与复用}
+Prompt-level 缓存把完整 Prompt 的哈希作为 Key，命中后直接返回历史结果；Embedding-level 缓存则把向量检索结果缓存下来，避免重复调用向量数据库；Partial-result 缓存把多模型 Pipeline 中间节点的输出缓存，例如「改写后的 Prompt」或「检索到的文档片段」。失效策略可结合时间窗口、Prompt 版本号以及业务事件（如商品下架）做多级失效。\par
+\chapter{批处理与流式}
+OpenAI Batch API 可把数千条请求打包成一个 JSONL 文件，数小时后统一返回，单 Token 成本可再降 50\%{}。vLLM 的 continuous batching 则在服务端把不同请求的 Token 动态拼到同一个 GPU batch 中，显著提升吞吐。流式输出方面，Token 级增量推送能把首包延迟从 800 ms 降到 150 ms 左右，但需要前端做好打字机效果，避免用户感知到网络抖动。\par
+\chapter{量化与蒸馏}
+边缘场景可把 7B 模型量化到 4-bit，显存占用减少 75\%{}，推理速度提升 1.8 倍，而在核心链路保留 16-bit 精度以保证输出质量。知识蒸馏则是用大模型做 Teacher，把它的生成结果作为监督信号去训练小模型，典型做法是把 GPT-4 生成的「思考链」蒸馏到 13B 学生模型，再用该学生模型承担 70\%{} 的低难度请求。\par
+\chapter{弹性伸缩}
+KEDA 可基于 GPU 显存水位、队列长度或 P99 延迟做自定义扩缩容。HPA 则监听 Deployment 的 CPU/GPU 指标，在夜间低峰自动缩到最小副本，白天流量高峰前置扩容。配合 Cluster Autoscaler，可把 Spot GPU 实例作为「伸缩组」，在价格低于阈值时自动加入，成本可再降 40\%{}。\par
+\chapter{可观测性埋点}
+每一次跨模型调用都生成唯一 TraceID，并在节点入口、出口打点「start\_{}ts、end\_{}ts、token\_{}in、token\_{}out、cost\_{}usd」。异常自动采样策略是：对 4xx/5xx 错误全采样，对正常请求仅采样 1\%{}，再对 P99 尾延迟请求额外采样 10\%{}，以兼顾存储成本与可观测性。\par
+\chapter{指标看板}
+黄金三指标分别是 Latency（P50/P95/P99）、Cost per Query（按天聚合）和 Error Rate（按模型、按错误码细分）。业务指标包括 Task Success Rate（最终答案被用户采纳的比例）和 Human Preference（人工打分或在线点赞率）。漂移检测则监控输入 Embedding 的分布偏移和输出质量的自动评估分数（如 Factuality、Toxicity）。\par
+\chapter{真实案例 A：多模型 RAG 问答}
+某在线教育平台在 RAG 问答链路中依次使用 BM25 粗排、Embedding 精排、Reranker 重排、LLM 生成答案四个阶段。通过把 70\%{} 的简单问题直接路由到 7B 本地模型，仅把复杂问题送给 GPT-4，P95 延迟从 2.4 s 降至 1.6 s，Token 成本下降 28\%{}。\par
+\chapter{真实案例 B：Agent 工具调用编排}
+在代码生成 Agent 中，Planner 使用 GPT-4 拆解需求，Executor 使用 Claude-3-Haiku 逐行写代码，Verifier 使用本地 7B 做静态分析和测试用例生成。冷启动优化是并行预取工具描述，把工具 Schema 的 Embedding 缓存到 Redis，首次调用延迟从 1200 ms 降到 300 ms。\par
+\chapter{真实案例 C：A/B 测试平台}
+平台把 5\%{} 的生产流量切到新模型，同时把「任务成功率」和「平均 Token 成本」作为核心指标。若连续 30 分钟新模型成功率低于旧模型 3 个百分点，或成本上升超过 20\%{}，自动回滚。统计显著性检验使用双总体 t 检验，样本量在 2000 次以上时给出显著性结论。\par
+\chapter{演进路线}
+0 → 1 阶段把单链路改造成多模型并行；1 → N 阶段引入 Router、成本预算和影子流量；N → N+1 阶段则把路由策略升级为在线学习，并开放「模型市场」让业务方自助上模型。团队分工上，ML Platform 负责模型 serving 与监控，AI Product 维护 Prompt 版本与评估集，SRE 搭建成本看板与告警分级。\par
+\chapter{立即开始的三件事}
+第一，建立最小可观测 Pipeline：用 LangSmith 或自研 Trace 层把单条请求的完整调用链路打点；第二，接入成本预算熔断：在 Router 层增加「当日预算」和「单请求预算」两级校验，超预算直接返回 429；第三，每周 Review 一次路由日志，重点关注 P99 延迟和成本异常的 Prompt 样本，持续迭代路由规则。\par
