@@ -1,0 +1,131 @@
+---
+title: "操作系统的内核移植"
+author: "杨其臻"
+date: "Sep 07, 2026"
+description: "零基础内核移植全流程指南"
+latex: true
+pdf: true
+---
+
+## 摘要
+
+内核移植是将现有操作系统内核适配到新硬件平台或特定应用场景的技术过程。它不仅涉及底层体系结构差异的抽象与封装，还需要在启动流程、内存布局、中断模型和驱动接口上进行系统级重构。本文以 Linux 为主要示例，结合 RTOS 与 Unikernel 的对比视角，系统梳理从工具链准备到最终验证发布的完整流程，并提供可落地的调试策略与性能调优经验。
+
+
+内核移植是指在保持内核核心逻辑不变的前提下，通过新增或修改体系结构相关代码，使同一份内核源码能够在不同指令集、内存模型或外设拓扑上正确运行。与「移植操作系统发行版」不同，后者通常仅涉及文件系统、用户态工具链和配置脚本的裁剪，而内核移植则需要深入 `arch/`、`drivers/` 等内核核心模块。实际工程中，内核移植常用于支持尚未被主线内核覆盖的新型 RISC-V 或 ARM SoC、开展操作系统教学实验，以及为特定商业场景裁剪实时或安全特性。
+
+## 背景知识
+
+在开始移植前，需要对计算机体系结构的基本要素建立清晰认知。指令集架构（ISA）决定了寄存器数量、特权级划分以及函数调用规范；内存管理单元（MMU）负责虚拟地址到物理地址的转换与页权限控制；中断与异常模型则定义了异步事件如何被捕获、派发与返回。选取目标平台时，RISC-V 64 以其开放的指令扩展和简洁的异常向量表成为教学与原型验证的优选；ARMv8-A 则在移动和嵌入式领域占据主导；x86-64 因其复杂的分段与长模式切换机制，适合作为对比参照。参考内核既可以是功能完备的 Linux v6.x，也可以是面向实时场景的 Zephyr、FreeRTOS，或极致精简的 Unikernel。
+
+## 移植前准备
+
+搭建交叉编译环境是移植工作的第一步。需安装目标架构对应的 `gcc` 或 `clang` 工具链，并确保链接脚本与内核启动地址匹配。调试环境通常由 GDB 配合 QEMU（纯软件仿真）或 OpenOCD（真实 JTAG）组成。硬件抽象层（HAL）把 SoC 差异封装为统一接口，而设备树（DTS/DTB）则以声明方式描述外设地址、中断号和时钟频率，从而避免在内核中硬编码平台细节。版本控制与持续集成可进一步保证每次修改都能在多平台上自动化回归。
+
+## 移植流程：以 Linux 为例
+
+### 获取并梳理上游代码
+
+首先下载 Linux 主线源码，重点关注 `arch/` 目录下的体系结构相关代码。`Kconfig` 文件定义了可配置的选项，`Makefile` 则负责根据配置生成最终的 `vmlinux` 或 `Image`。理解这两套机制有助于在新增架构时正确添加配置项并组织编译单元。
+
+### 添加新架构/SoC 支持
+
+创建 `arch/<new_arch>` 目录骨架后，需要实现启动汇编代码。以 `head.S` 为例，其核心逻辑可概括为：
+
+```asm
+ENTRY(_start)
+    /* 关闭中断，设置栈指针 */
+    csrw sie, zero
+    la sp, init_stack + INIT_STACK_SIZE
+    /* 跳转到 C 入口 */
+    tail start_kernel
+END(_start)
+```
+
+这段代码首先屏蔽中断，避免在初始化阶段触发不可控异常；随后把栈指针指向一段预留的初始栈空间；最后通过尾调用进入 `start_kernel` C 函数，正式开始内核初始化流程。
+
+异常与中断向量表通常放置在 `entry.S` 中。以 RISC-V 为例，向量表可通过 `stvec` 寄存器指向一段连续的异常处理存根：
+
+```asm
+.align 2
+.global vector_table
+vector_table:
+    j handle_exception
+    j handle_irq
+```
+
+每当发生异常或中断，处理器会跳转到对应偏移，保存上下文后调用具体处理函数。上下文切换则需要保存/恢复通用寄存器与 CSR 状态：
+
+```c
+void switch_to(struct task_struct *prev, struct task_struct *next) {
+    /* 保存 prev 寄存器到其 thread_struct */
+    __switch_to_asm(prev, next);
+    /* 切换页表基址 */
+    csr_write(CSR_SATP, next->mm->satp);
+}
+```
+
+内存管理部分首先要建立线性映射，把物理地址直接映射到高位虚拟地址空间，以便内核可通过固定偏移访问全部物理内存。高端内存则通过 `vmalloc` 区域动态映射，用于访问大于虚拟地址空间的物理区间。
+
+时钟源初始化需要读取 SoC 的定时器频率，并注册到内核调度器。典型代码如下：
+
+```c
+void __init time_init(void) {
+    u64 freq = get_timer_freq();
+    /* 写入时间比较寄存器，触发首次时钟中断 */
+    set_next_event(freq / HZ);
+    /* 注册 ce 设备 */
+    clocksource_register_hz(&riscv_clocksource, freq);
+}
+```
+
+### 设备驱动适配
+
+串口驱动负责提供早期 `printk` 输出，其探针函数需解析设备树节点中的 `reg` 属性以获得基地址：
+
+```c
+static int uart_probe(struct platform_device *pdev) {
+    struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+    uart_base = ioremap(res->start, resource_size(res));
+    /* 使能发送与接收 */
+    writel(CTRL_TX_EN | CTRL_RX_EN, uart_base + UART_CTRL);
+    return 0;
+}
+```
+
+中断控制器则需实现 `irq_chip` 结构体中的 `irq_mask`、`irq_unmask` 和 `irq_eoi` 方法，以正确屏蔽、使能与结束中断。
+
+### 构建与启动测试
+
+使用 QEMU 启动内核时，可通过以下命令行快速验证：
+
+```bash
+qemu-system-riscv64 -kernel arch/riscv/boot/Image \
+    -append "earlycon console=ttyS0" \
+    -nographic
+```
+
+若能在串口看到 `Linux version` 字符串，说明启动流程已打通。KGDB 调试则需在内核配置中打开 `CONFIG_DEBUG_INFO` 与 `CONFIG_KGDB`，并在 QEMU 侧添加 `-gdb tcp::1234` 参数，随后在 GDB 中执行 `target remote :1234` 即可单步跟踪。
+
+### 性能与稳定性调优
+
+Cache 策略调优包括设置正确的页属性位，避免可执行代码与数据混用导致的 I-Cache 失效；DMA 对齐则要求驱动在分配 DMA buffer 时满足硬件对齐要求，防止总线错误。电源管理 governor 可通过 `cpufreq` 子系统动态调节 CPU 频率，从而在性能与功耗间取得平衡。
+
+## 移植流程：以 RTOS/Unikernel 为例
+
+Zephyr 的板级支持包（BSP）通过设备树改写即可添加新板，无需修改内核主体。FreeRTOS 的移植层集中在 `portable` 目录下的 `port.c` 与 `portASM.S`，主要改写任务上下文切换与中断入口。Unikernel（如 Rumprun）则将内核与应用链接为单一地址空间，其硬件抽象最小化到仅保留必要的启动与 I/O 路径。
+
+## 常见问题与调试技巧
+
+启动阶段宕机往往源于链接地址与实际加载地址不符，或设备树指针未正确传递。解决思路是检查链接脚本中的 `BASE_ADDRESS` 是否与 QEMU 或 Bootloader 传入的参数一致。中断风暴通常由中断使能/屏蔽逻辑错误导致，可通过在中断处理入口添加计数器并打印日志定位。内存踩踏可借助 KASAN（Kernel Address Sanitizer）在编译时插入影子内存检测代码，及时捕获越界访问。
+
+## 移植后的验证与发布
+
+功能测试矩阵应覆盖自检脚本、LTP 测试套件以及 POSIX 一致性测试。性能测试可使用 lmbench 测量上下文切换与系统调用延迟，cyclictest 评估实时性，netperf 检验网络吞吐。向上游提交补丁需遵循内核邮件列表规范，提供完整提交信息与测试日志。版本维护策略则需权衡 LTS 长期支持带来的稳定性与主线快速演进带来的新特性。
+
+## 案例研究
+
+在玄铁 RISC-V SoC 上移植 Linux 时，需先实现 `head.S` 中的 MMU 开启与 SMP 启动握手；树莓派 5 的 Cortex-A76 核心则需在设备树中正确描述 GICv3 中断控制器与 PCIe 资源；QEMU virt 平台因其无外设依赖，适合作为教学实验的起点，可快速验证调度与内存管理逻辑。
+
+
+内核移植的核心难点在于对体系结构差异的抽象封装，以及在启动早期缺乏高级调试手段时的故障定位。未来趋势包括 Rust for Linux 项目带来的内存安全增益、保密计算对可信执行环境的原生支持，以及 Unikernel 在云原生场景下的极致轻量化。延伸阅读可参考《Linux Device Drivers》与《RISC-V Reader》，社区资源则以 Linux 内核邮件列表、RISC-V 国际与 Zephyr 社区为主。
