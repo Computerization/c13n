@@ -1,0 +1,81 @@
+\title{Linux 内核驱动开发}
+\author{李睿远}
+\date{Sep 15, 2026}
+\maketitle
+驱动程序是 Linux 系统中连接硬件与软件的桥梁，负责把外设的电信号转化为可被操作系统识别和调度的抽象对象。当 CPU 发出指令读取磁盘扇区、播放音频或发送网络报文时，实际上是调用驱动程序提供的统一接口完成底层操作。掌握内核驱动开发，既能获得更高的执行效率，也能在嵌入式、云计算和安全场景中实现对硬件行为的完全可控。\par
+本文面向具备 C 语言基础、了解内核构建流程并熟悉 Git 版本控制的读者，系统梳理从环境搭建到社区贡献的全链路实践。全文共分八个部分，依次介绍驱动开发生态、开发环境、核心框架、实战案例、进阶主题、排错方法与社区参与，帮助读者建立完整的知识体系。\par
+\chapter{内核驱动开发生态}
+在正式动手之前，需要先了解 Linux 内核的版本策略与源码组织方式。长期支持分支（LTS）每两年发布一次，维护周期通常为六年，适合对稳定性要求高的产品选用。内核源码树中，\texttt{drivers/} 目录按总线类型划分子目录，\texttt{include/} 存放对外头文件，\texttt{Documentation/} 则以 reStructuredText 格式记录 API 说明与示例。\par
+构建系统由 Kconfig 与 Kbuild 两部分组成。Kconfig 通过层级菜单描述驱动的依赖与可选特性，menuconfig 工具据此生成 \texttt{.config} 文件；Kbuild 则根据 \texttt{.config} 中启用的选项决定编译哪些目标文件。社区协作依托邮件列表与 Patchwork 平台，开发者需先通过 \texttt{checkpatch.pl} 脚本检查格式，再将补丁发送至对应维护者。许可证方面，内核采用 GPL-2.0，补丁头部需添加 SPDX 标识以声明合规性。\par
+\chapter{驱动开发环境搭建}
+宿主机与目标机的角色分配直接影响调试效率。对于 x86 平台，可在本地虚拟机或 QEMU 中运行自编译内核；对于 ARM 或 RISC-V，则需交叉编译链与开发板。安装交叉编译器后，可通过 \texttt{aarch64-linux-gnu-gcc -v} 验证版本，再用 \texttt{git clone --depth=1} 获取最新稳定分支源码。\par
+构建最小可启动内核时，先执行 \texttt{make tinyconfig}，再用 menuconfig 启用必需的字符设备、块设备及网络驱动。调试手段包括 \texttt{printk}、动态调试开关 \texttt{dynamic-debug}、KGDB 远程调试以及 ftrace 性能剖析。推荐工具链中，ccache 可加速重复编译，clang 搭配 \texttt{-W1} 警告选项可捕获更多潜在问题，sparse 与 smatch 则用于静态检查内存与锁使用。\par
+\chapter{驱动程序核心框架}
+Linux 将设备抽象为字符设备、块设备与网络设备三类。字符设备以字节流方式交互，核心结构为 \texttt{cdev}；块设备以扇区为单位，核心结构为 \texttt{gendisk}；网络设备则通过 \texttt{net\_{}device} 管理收发队列。设备号由主次数组成，主设备号标识驱动类型，次设备号区分同一驱动下的多个实例。\par
+模块生命周期由 \texttt{module\_{}init} 与 \texttt{module\_{}exit} 宏定义，加载时执行初始化，卸载时执行清理。\texttt{MODULE\_{}LICENSE}、\texttt{MODULE\_{}AUTHOR} 等宏用于声明模块元数据。文件操作通过 \texttt{file\_{}operations} 结构体暴露给用户态，常见回调包括 \texttt{open}、\texttt{read}、\texttt{write}、\texttt{ioctl} 与 \texttt{mmap}。设备模型采用 bus-device-driver 三层抽象，sysfs 导出属性节点，udev 根据规则动态创建设备文件。\par
+中断处理分为硬中断与软中断。硬中断服务程序需尽快结束，把耗时操作交给 tasklet 或 workqueue。内存管理方面，\texttt{kmalloc} 分配小块连续物理内存，\texttt{get\_{}free\_{}pages} 则用于大块页对齐分配；DMA API 提供 \texttt{dma\_{}alloc\_{}coherent} 与 \texttt{dma\_{}map\_{}single}，分别对应一致性与流式映射模式。\par
+\chapter{实战：写一个最简字符设备驱动}
+需求定义为一个 4 KB 虚拟 FIFO，读写操作循环使用同一块缓冲区。首先在 \texttt{drivers/char/} 下新建目录 \texttt{vfifo}，并在 Kconfig 中添加配置项：\par
+\begin{lstlisting}[language=c]
+config VFIFO
+    tristate "Virtual FIFO character device"
+    depends on m
+    help
+      A simple 4 KB ring buffer exposed as /dev/vfifo.
+\end{lstlisting}
+代码实现从模块入口开始：\par
+\begin{lstlisting}[language=c]
+static int __init vfifo_init(void)
+{
+    int ret;
+    dev_t devno = MKDEV(42, 0);
+    ret = register_chrdev_region(devno, 1, "vfifo");
+    if (ret < 0)
+        return ret;
+    cdev_init(&vfifo_cdev, &vfifo_fops);
+    ret = cdev_add(&vfifo_cdev, devno, 1);
+    if (ret < 0) {
+        unregister_chrdev_region(devno, 1);
+        return ret;
+    }
+    return 0;
+}
+module_init(vfifo_init);
+\end{lstlisting}
+\texttt{register\_{}chrdev\_{}region} 向内核申请设备号，\texttt{cdev\_{}init} 将 \texttt{file\_{}operations} 与 \texttt{cdev} 绑定，\texttt{cdev\_{}add} 则将字符设备注册到系统。\texttt{file\_{}operations} 的 \texttt{read} 与 \texttt{write} 回调需处理环形缓冲区的索引更新与并发保护：\par
+\begin{lstlisting}[language=c]
+static ssize_t vfifo_read(struct file *filp, char __user *buf,
+                          size_t count, loff_t *f_pos)
+{
+    ssize_t ret;
+    mutex_lock(&vfifo_lock);
+    if (kfifo_is_empty(&vfifo)) {
+        mutex_unlock(&vfifo_lock);
+        return 0;
+    }
+    ret = kfifo_to_user(&vfifo, buf, count, f_pos);
+    mutex_unlock(&vfifo_lock);
+    return ret;
+}
+\end{lstlisting}
+\texttt{kfifo\_{}to\_{}user} 内部调用 \texttt{copy\_{}to\_{}user} 把内核缓冲区数据复制到用户空间，同时更新读指针。并发控制使用互斥锁 \texttt{mutex}，避免多进程同时读写导致的数据竞争。\par
+构建与安装流程为：\texttt{make M=drivers/char/vfifo modules \&{}\&{} make modules\_{}install}，随后执行 \texttt{depmod -a} 更新模块依赖。udev 规则可写入 \texttt{/etc/udev/rules.d/99-vfifo.rules}，内容为 \texttt{KERNEL=="vfifo", MODE="0666"}，确保普通用户可访问设备节点。\par
+用户态测试程序只需标准文件操作：\par
+\begin{lstlisting}[language=c]
+int fd = open("/dev/vfifo", O_RDWR);
+write(fd, "hello", 5);
+read(fd, buf, 5);
+close(fd);
+\end{lstlisting}
+调试时，可在 \texttt{dmesg} 中查看 \texttt{printk} 输出；若出现 Oops，可通过 \texttt{/proc/kallsyms} 将地址解析为符号名，定位崩溃点。\par
+\chapter{进阶主题}
+平台驱动是嵌入式场景下的主流形式，核心结构为 \texttt{platform\_{}driver}，通过 \texttt{of\_{}match\_{}table} 中的 \texttt{compatible} 字符串与设备树节点匹配。匹配成功后，\texttt{probe} 函数可调用 \texttt{of\_{}iomap} 映射寄存器地址，并使用 \texttt{irq\_{}of\_{}parse\_{}and\_{}map} 获取中断号。\par
+中断底半部可选用线程化中断 \texttt{request\_{}threaded\_{}irq}，把耗时处理放入内核线程，避免阻塞硬中断上下文。DMA 引擎框架通过 \texttt{dmaengine} 子系统管理 DMA 控制器，开发者只需准备 \texttt{scatterlist} 并调用 \texttt{dmaengine\_{}prep\_{}slave\_{}sg}，即可发起异步数据传输。\par
+电源管理方面，运行时 PM 回调 \texttt{runtime\_{}suspend} 与 \texttt{runtime\_{}resume} 负责在空闲时关闭时钟与电源，系统级 suspend/resume 则需保存设备上下文并在唤醒后恢复。安全性上，ioctl 接口应检查 \texttt{capable(CAP\_{}SYS\_{}ADMIN)}，并在 SELinux 策略中为设备节点打上特定标签。\par
+性能剖析可使用 perf 记录硬件事件，或用 eBPF 在内核态动态插桩，ftrace 的 \texttt{function\_{}graph} tracer 能直观展示函数调用耗时。持续集成方面，kernelci 每日构建并测试上游树，0-day 与 syzkaller 则负责捕捉回归与模糊测试漏洞。\par
+\chapter{排错与社区贡献}
+常见内核崩溃包括 NULL 指针解引用、use-after-free、锁反转与死锁。Oops 信息首行显示错误类型，随后是寄存器转储与调用栈。\texttt{Code:} 行以十六进制展示崩溃指令，可在 \texttt{vmlinux} 中反汇编定位具体语句。\par
+补丁提交流程要求使用 \texttt{git send-email}，主题前缀需包含子系统名称与补丁序号，Signed-off-by 标签声明贡献者身份，Fixes 标签指明被修复的 commit。向上游合入前，需确保通过 \texttt{checkpatch.pl --strict}，并在 cover letter 中说明改动动机与测试结果。\par
+本文系统梳理了 Linux 内核驱动开发从环境搭建到社区贡献的全流程，涵盖设备模型、中断管理、内存分配与电源管理等核心主题。读者可继续阅读《Linux Device Drivers, 3rd Edition》与《Linux Kernel Development》，并在 kernel.org/doc 中查阅最新 API 文档。实践项目建议从 USB 摄像头驱动、SPI-NOR 闪存驱动或 I2C 传感器驱动入手，逐步深入理解硬件抽象与性能优化。\par
+\chapter{附录}
+常用内核宏与函数速查表可整理为单页 PDF，包含 \texttt{container\_{}of}、\texttt{list\_{}for\_{}each\_{}entry}、\texttt{devm\_{}kzalloc} 等常用接口。Vim 用户可在 \texttt{.vimrc} 中添加 \texttt{set ts=8 sw=8 noet} 以匹配内核编码风格；Emacs 用户可启用 \texttt{linux-kernel} major mode。QEMU 一键启动脚本示例可使用 \texttt{qemu-system-x86\_{}64 -kernel arch/x86/boot/bzImage -initrd initramfs.img -append "console=ttyS0"} 快速验证内核变更。\par
