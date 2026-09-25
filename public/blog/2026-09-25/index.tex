@@ -1,0 +1,31 @@
+\title{SIMD 指令集的跨平台实现与优化}
+\author{李睿远}
+\date{Sep 25, 2026}
+\maketitle
+SIMD 指令集之所以长期占据高性能计算的核心位置，主要在于它能以单条指令同时处理多个数据元素，从而显著提升吞吐量并降低每操作的能耗。在人工智能推理、图形渲染以及信号处理等场景中，计算密集型循环往往存在大量数据并行性，利用 SIMD 即可在相同的时钟周期内完成更多算术操作，而无需增加核心数量或频率。\par
+然而，主流平台对 SIMD 的支持呈现碎片化特征。x86-64 平台经历从 SSE 到 AVX-512 的多代演进，ARM 体系则从 NEON 扩展至可伸缩的 SVE/SVE2，而新兴的 RISC-V 向量扩展和浏览器端的 WebAssembly SIMD 也各自拥有独立语义与寄存器模型。这种差异导致开发者必须为不同目标维护多套代码，显著增加了长期维护成本。\par
+本篇将提供一套「一次编写、多端适配」的工程方案，展示从标量实现逐步演进到 SIMD 手工优化，再到跨平台抽象层的完整路径。\par
+\chapter{SIMD 基础概念}
+SIMD 的本质是数据并行：一条指令同时对多个同质元素执行相同操作，与指令级并行通过乱序执行隐藏延迟的思路不同。典型实现将多个标量值打包进宽寄存器，例如 x86 的 \texttt{\_{}\_{}m256} 可容纳八个单精度浮点数，ARM 的 \texttt{float32x4\_{}t} 则固定为四个。\par
+常见操作包括对齐或非对齐的加载与存储、逐元素算术、比较掩码生成、通道重排以及水平归约求和。性能模型需同时考虑指令吞吐、执行延迟与访存带宽：当数据无法常驻 L1 Cache 时，SIMD 加速往往受限于内存子系统而非算术单元。\par
+\chapter{主流平台 SIMD 指令集}
+x86-64 平台从 SSE 的 128 位逐步扩展至 AVX-512 的 512 位，典型指令如 \texttt{\_{}mm\_{}add\_{}ps} 与 \texttt{\_{}mm256\_{}fmadd\_{}ps} 分别完成四元与八元单精度加法及乘加融合。ARM 的 NEON 在 128 位固定宽度的基础上，SVE 通过可变长度向量寄存器支持 128 至 2048 位伸缩；RISC-V 向量扩展采用长度不定的 \texttt{v} 寄存器，指令如 \texttt{vle32\_{}v} 与 \texttt{vfadd\_{}vv} 可在同一二进制下适配不同硬件向量长度。WebAssembly 的 128 位 SIMD 则面向浏览器与边缘环境，提供 \texttt{v128.load} 与 \texttt{i32x4.add} 等基础操作。\par
+不同指令集在掩码运算、跨通道散布收集以及水平归约的支持程度上存在差异，开发者需在抽象层进行能力探测与策略降级。\par
+\chapter{跨平台抽象层设计}
+抽象目标是提供统一接口，如 \texttt{load}、\texttt{store}、\texttt{add}、\texttt{mul} 与 \texttt{fma}，同时保证零成本抽象，即编译期可完成常量折叠与内联展开，避免运行时分支。\par
+实现策略可分为四类：第一类通过条件编译与内联函数在 C/C++ 中区分不同平台；第二类借助模板元编程，利用 \texttt{enable\_{}if} 或 C++20 Concepts 在编译期选择特化版本；第三类使用代码生成器，例如 ISPC 或 Halide，在更高层次描述算法，再由后端生成平台特定代码；第四类直接集成第三方库，如 xsimd、eve 或 Google Highway，它们已在内部封装多套 intrinsics，并提供统一的向量类型与策略模板。\par
+以跨平台向量加法为例，抽象接口可声明为 \texttt{template <typename T> Vec<T, 4> add(Vec<T, 4> a, Vec<T, 4> b);}。在 x86 后端，该函数内联为 \texttt{\_{}mm\_{}add\_{}ps}；在 ARM 后端则映射为 \texttt{vaddq\_{}f32}，调用者无需感知底层差异。\par
+\chapter{工程实践}
+以 RGB 到 YUV 颜色空间转换为例，标量实现逐像素读取 R、G、B 分量，通过固定系数加权求和得到 Y、U、V。SSE 手工重构时，可将 16 个像素的 R 分量连续加载至 \texttt{\_{}\_{}m128i}，利用 \texttt{\_{}mm\_{}unpacklo\_{}epi8} 与 \texttt{\_{}mm\_{}unpackhi\_{}epi8} 完成通道分离，再用 \texttt{\_{}mm\_{}cvtepi32\_{}ps} 将整数转为浮点以进行乘加运算。\par
+改用 xsimd 后，同样逻辑可写为 \texttt{auto r = xs::load\_{}unaligned<float>(R\_{}ptr); auto y = xs::fma(r, xs::broadcast(kR), xs::fma(g, xs::broadcast(kG), b * xs::broadcast(kB)));}，代码行数大幅减少，可读性显著提升，同时保留与手写 intrinsics 接近的性能。\par
+内存对齐是另一关键：对齐分配可使用 C++17 的 \texttt{std::aligned\_{}alloc} 或 \texttt{operator new} 的对齐重载；若强制使用非对齐加载，x86 的 \texttt{\_{}mm\_{}loadu\_{}ps} 与 ARM 的 \texttt{vld1q\_{}f32} 仍能正确执行，但可能引入额外微码开销。\par
+在循环展开方面，选择 256 位向量时单次迭代可处理八个单精度元素，配合软件流水线与预取，可将多组数据块交替装入寄存器，隐藏 L2 Cache 访问延迟。\par
+\chapter{性能评测与调优}
+测试环境覆盖 Intel 第十二代酷睿、Apple M2 与 Ampere Altra，编译器使用 GCC 12、Clang 16 及 MSVC 2022。评测指标包括每秒操作数、通过 \texttt{perf stat} 统计的指令与周期数，以及 Cache Miss 率。\par
+调优技巧包括用掩码操作消除分支，例如将 \texttt{if (x > 0)} 替换为比较生成掩码后进行按位与；开启 FMA 可将乘加两步融合为单条指令，降低延迟并提升吞吐；数据布局从 AoS 转为 SoA，可使同类通道连续存放，进一步提高向量化效率。\par
+\chapter{跨平台兼容性陷阱}
+指令集检测需在运行时完成：x86 通过 CPUID，ARM 通过 \texttt{getauxval(AT\_{}HWCAP)}，WebAssembly 则依赖 \texttt{WebAssembly.validate} 或特性查询 API。\par
+当目标硬件缺失某条指令时，可采用运行时 polyfill，例如在仅支持 SSE2 的旧平台上用软件模拟 AVX2 的 256 位操作，但会带来明显开销。AVX-512 存在降频问题，当 512 位向量单元激活时，主频可能被限制；移动端则受散热约束，长时间高负载可能触发降频策略，需在调度层动态调整向量宽度。\par
+\chapter{未来展望}
+RISC-V 向量扩展正逐步获得主流编译器与 Linux 发行版支持，其可变长度特性有望在高性能计算与边缘设备上发挥优势。WebAssembly 的 relaxed-simd 提案引入松弛语义的 FMA 与近似超越函数，将进一步提升浏览器端数值计算性能。AI 框架方面，MLIR 与 TVM 已开始在张量表达式级别集成 SIMD 后端，实现从张量算子到向量指令的端到端代码生成。\par
+跨平台 SIMD 的核心在于抽象层设计需兼顾语义统一与性能零损耗。推荐工具链组合为 Highway 提供的高级抽象、CMake 管理多平台构建，以及 Google Benchmark 进行量化评测。鼓励开发者将本地优化以补丁形式回馈上游，推动整个生态的协同演进。\par
