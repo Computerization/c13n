@@ -1,0 +1,64 @@
+\title{数据库索引结构优化}
+\author{王思成}
+\date{Oct 14, 2026}
+\maketitle
+在关系型数据库的性能调优中，索引结构的选择和优化往往是收益最高的手段之一。无论是 MySQL、PostgreSQL，还是新兴的 NewSQL 系统 TiDB、CockroachDB，索引的底层数据结构直接决定了磁盘 I/O 模式、并发控制粒度以及写入放大系数。慢查询、锁竞争、写放大、存储膨胀这些典型痛点，大多可以追溯到索引结构与工作负载的不匹配。本文聚焦于 OLTP 与 OLAP 场景下的索引结构选型与调优，围绕 B+Tree 和 LSM-Tree 两种主流结构，系统梳理理论模型、物理布局、索引裁剪、分区分桶以及统计信息维护等核心维度，并通过真实业务案例展示优化效果。\par
+\chapter{索引结构基础回顾}
+磁盘 I/O 模型是理解索引结构差异的起点。机械硬盘的随机读延迟通常在毫秒级，而顺序读可以达到百兆每秒；SSD 的随机读延迟下降到微秒级，但依然存在明显的「随机写放大」。页大小与缓存行长度决定了单次 I/O 能携带的有效载荷，也影响了页分裂与合并的频率。B+Tree 将数据组织为根节点、分支节点与叶子节点，叶子节点通过双向链表串联，既支持等值查找，也支持高效的范围扫描与顺序遍历。InnoDB 的聚簇索引就是典型的 B+Tree 实现，主键顺序即物理存储顺序，二级索引则存储主键值以回表。B+Tree 的缺点在于随机写入会引发页分裂、页合并，进而产生锁竞争与写放大。\par
+LSM-Tree 通过「先写内存、再顺序刷盘、分层合并」的策略，把随机写转化为顺序写。MemTable 接收写入，Immutable MemTable 达到阈值后转为 SSTable，后台 Compaction 线程负责多层合并。TiDB 的 TiKV、Cassandra、RocksDB 均采用该结构。LSM-Tree 的写吞吐极高，但读路径变长，需要在 MemTable、各级 SSTable 中逐层查找，产生读放大；同时多版本数据共存导致空间放大，Compaction 风暴可能阻塞前台写入。\par
+Hash 索引在等值查询场景下可将查找复杂度降至常数级，但不支持范围查询与排序。Bitmap 与 Roaring Bitmap 适合低基数字段的 OLAP 分析，Skip List 则常用于内存数据库的早期原型实现。\par
+\chapter{核心优化维度与手段}
+结构选型是第一步。对于高并发写入的 OLTP 场景，LSM-Tree 或追加式 B+Tree（如 InnoDB 的 Insert Buffer）能显著降低随机 I/O；若查询以范围扫描与排序为主，B+Tree 或聚簇索引仍是首选；等值点查极高的场景可引入自适应 Hash 索引或纯内存 Hash 结构。\par
+物理布局层面，页大小需要与存储介质匹配：SSD 环境下可将页大小从 16 KB 调至 32 KB 以降低 I/O 次数，HDD 则适合 8 KB 以减少单页读取开销。填充因子与 PCTFREE 的设置需要在「减少页分裂」与「避免空间浪费」之间权衡。数据本地性方面，按主键顺序插入能最大化页利用率，而 UUID 主键则会引发大量随机页分裂。\par
+索引裁剪是降低维护成本的有效手段。通过 \texttt{sys.schema\_{}redundant\_{}indexes} 可识别重复或被覆盖的索引；复合索引遵循最左前缀原则，改写查询可避免全表扫描；覆盖索引让查询直接在索引页完成，避免回表带来的额外 I/O。\par
+分区分桶对索引的影响体现在分区裁剪与全局/本地索引的权衡上。Range 分区适合时间序列数据，可通过分区键直接定位目标分区；Hash 分区则能均匀分布热点。PostgreSQL 的扩展统计信息与直方图能够捕捉列间相关性，优化器据此生成更准确的执行计划。\par
+\chapter{实战案例拆解}
+电商订单表慢查询案例中，原索引仅包含 \texttt{user\_{}id}，导致查询需要回表获取 \texttt{order\_{}time}、\texttt{status}、\texttt{pay\_{}amount} 等字段。通过在 \texttt{(user\_{}id, order\_{}time DESC)} 上建立覆盖索引，查询可直接在索引页完成。执行计划从全表扫描变为 Index Only Scan，QPS 提升六倍，Buffer Pool 命中率达到 99\%{} 以上。关键 SQL 改写如下：\par
+\begin{lstlisting}[language=sql]
+SELECT status, pay_amount
+FROM orders
+WHERE user_id = 10086
+  AND order_time BETWEEN '2024-01-01' AND '2024-01-31'
+ORDER BY order_time DESC
+LIMIT 20;
+\end{lstlisting}
+优化后的索引定义为：\par
+\begin{lstlisting}[language=sql]
+CREATE INDEX idx_user_time_cover
+ON orders (user_id, order_time DESC)
+INCLUDE (status, pay_amount);
+\end{lstlisting}
+在 PostgreSQL 中对应语法为：\par
+\begin{lstlisting}[language=sql]
+CREATE INDEX idx_user_time_cover
+ON orders (user_id, order_time DESC)
+INCLUDE (status, pay_amount);
+\end{lstlisting}
+IoT 时序数据场景下，InnoDB 的行存结构导致随机写入延迟高达 30 ms。通过改用 TokuDB 的 Fractal Tree 或直接迁移到 TDengine、Cassandra 等 LSM-Tree 引擎，写入延迟降至 2 ms，存储空间压缩率提升 40\%{}。TDengine 的建表语句示例：\par
+\begin{lstlisting}[language=sql]
+CREATE TABLE power_meter (
+    ts TIMESTAMP,
+    device_id INT,
+    voltage FLOAT,
+    current FLOAT
+)
+TAGS (location BINARY(64))
+\end{lstlisting}
+写入路径先进入 MemTable，达到阈值后顺序刷盘，后台 Compaction 合并多层 SSTable，避免了 InnoDB 的页分裂开销。\par
+SaaS 多租户场景中，每租户独立索引导致元数据膨胀至 1200 个索引。通过在租户列上建立前缀索引，并结合 PostgreSQL 的 Partial Index 或 TiDB 的 Row-level TTL，可将索引数量降至 200 个，备份窗口缩短 70\%{}。Partial Index 创建语法：\par
+\begin{lstlisting}[language=sql]
+CREATE INDEX idx_tenant_active
+ON orders (tenant_id, created_at)
+WHERE status = 'active';
+\end{lstlisting}
+TiDB 的 TTL 语法示例：\par
+\begin{lstlisting}[language=sql]
+ALTER TABLE orders
+SET TTL = `created_at` + INTERVAL 90 DAY;
+\end{lstlisting}
+\chapter{监控与持续调优}
+Buffer Pool 与 Page Cache 命中率是核心指标，\texttt{innodb\_{}buffer\_{}pool\_{}pages\_{}dirty} 反映脏页堆积程度，RocksDB 的 \texttt{rocksdb\_{}stall} 统计 Compaction 阻塞事件。慢查询日志结合执行计划对比，能定位索引失效或选择错误。自动化工具如 pt-index-usage、pgBadger、SOAR、TiDB Dashboard 的 Top-SQL 可定期扫描冗余与未使用索引。\par
+变更流程遵循影子表或 Online DDL 灰度、全量切换、旧索引延迟删除三阶段，避免直接在生产环境执行高风险 DDL。\par
+\chapter{未来演进}
+AI 自动索引推荐已在 Azure SQL、AWS DevOps Guru 中落地，基于工作负载特征自动生成候选索引。面向持久化内存（PMem）的 B+Tree 变种如 uTree、FPTree 通过缓存行感知与写时复制，降低 NVM 的写放大。HTAP 一体化存储如 TiDB TiFlash 采用行列混存与向量化索引，同时支持 OLTP 点查与 OLAP 分析。云原生索引即服务将冷索引下沉至 S3，通过对象存储前缀聚合实现低成本检索。\par
+结构选型遵循「写多优先 LSM-Tree、读多范围优先 B+Tree」的原则；单表索引数量控制在五个单列索引、三个联合索引以内；字段顺序遵循「区分度高、等值列在前、范围列在后」；定期巡检冗余、未使用、长字符串前缀截断索引；变更采用影子环境与小流量 A/B 灰度发布。\par
