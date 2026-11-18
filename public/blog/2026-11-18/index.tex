@@ -1,0 +1,52 @@
+\title{受限编程的实用技巧}
+\author{杨岢瑞}
+\date{Nov 18, 2026}
+\maketitle
+受限编程指的是在资源、语言、合规或流程等多重约束下，仍能交付高质量软件的工程实践。嵌入式设备、遗留系统、沙箱环境，以及需要极端性能或功耗优化的场景，都属于典型的受限范畴。看似苛刻的边界条件，反而能倒逼团队建立可量化、可追溯的工程规范，从而产出更可靠、更易维护的代码。\par
+\chapter{理解限制的本质}
+限制通常可归纳为四类：资源限制、语言或运行时限制、合规或安全限制，以及团队或流程限制。资源限制体现为内存、CPU、功耗或带宽的上限；语言或运行时限制可能表现为无垃圾回收、无异常处理、禁止动态分配；合规或安全限制常来自 MISRA、CERT 或沙箱 API；团队或流程限制则包含强制代码审查、静态检查、结对编程等。把这些限制翻译成可量化的指标，例如 RAM 不超过六十四 KB、圈复杂度不超过十、零堆分配次数，便能把「约束」变成可执行的编译期或链接期检查。\par
+\chapter{架构层面的策略}
+在架构层面，零成本抽象与静态多态是减少运行时开销的利器。C++ 模板或 Rust 的单态化能在编译期把类型分支固化，避免虚函数跳转与动态分发。举例来说，当我们需要根据不同外设寄存器地址生成驱动时，可用模板参数把地址编码为常量：\par
+\begin{lstlisting}[language=cpp]
+template <std::uintptr_t Addr>
+class Gpio {
+public:
+    static void set(uint32_t mask) {
+        *reinterpret_cast<volatile uint32_t*>(Addr) = mask;
+    }
+};
+\end{lstlisting}
+调用 \texttt{Gpio<0x4002'0000>::set(0x01)} 时，编译器直接把常量地址内联到指令中，零运行时开销。\par
+数据导向设计同样关键。将原本以对象为中心的 AoS 布局改为 SOA，把相同类型的数据连续存放，能显著提升缓存命中率。例如在粒子系统中，把位置、速度、颜色分别存储为三个连续数组，SIMD 指令便可一次处理多组数据。事件驱动与协程状态机则把「等待 I/O」转化为状态枚举，避免线程栈的额外开销。protothread 或 C++20 的协程可在单栈上实现协作式调度，把等待外设响应的逻辑写成平坦的状态机。\par
+\chapter{编码层面的技巧}
+在内存管理方面，固定大小的内存池和 RAII 封装能彻底消除碎片与悬垂指针。下面的代码展示了一个最小的编译期定容分配器：\par
+\begin{lstlisting}[language=cpp]
+template <std::size_t N, std::size_t Align = alignof(std::max_align_t)>
+class StaticPool {
+    alignas(Align) std::byte storage_[N];
+    std::size_t offset_{0};
+public:
+    void* allocate(std::size_t n, std::size_t a = Align) {
+        std::size_t space = N - offset_;
+        void* ptr = storage_ + offset_;
+        if (std::align(a, n, ptr, space)) {
+            offset_ = N - space + n;
+            return ptr;
+        }
+        return nullptr;
+    }
+};
+\end{lstlisting}
+\texttt{allocate} 函数利用 \texttt{std::align} 在编译期可知的缓冲区内寻找对齐位置。若分配失败，返回空指针，调用者必须在编译期或链接期处理该路径，从而把内存错误提前暴露。\par
+错误处理上，禁止异常的代码库常用 \texttt{std::optional} 或类似 \texttt{Result} 类型把错误信息显式化。\texttt{[[nodiscard]]} 属性可强制调用者检查返回值，避免忽略错误码。并发与异步场景中，无锁数据结构配合原子操作能避免锁竞争；协作式多任务则把异步回调转化为状态机，protothread 的核心宏把函数改写为带 \texttt{case} 标签的 switch，通过保存行号来恢复上下文。\par
+在数值计算中，定点数能替代浮点以消除 FPU 开销。Q-format 把小数点固定在字长的特定位置，例如 Q15 格式用十六位有符号整数表示范围为 \texttt{-1} 到 \texttt{1-2\^{}\{{}-15\}{}} 的小数。查表加增量计算可进一步减少重复运算，而位运算技巧如 SWAR 能一次处理多个字节的并行计数。\par
+代码生成则把重复的查表或状态机逻辑交给构建期脚本。用 Python 在编译前生成 C 数组，可保证生成代码可读、可追溯，并把人工维护错误降至最低。\par
+\chapter{工具链与流程}
+静态分析工具如 clang-tidy、Cppcheck、Coverity 能在提交前捕捉未初始化变量、违反 MISRA 规则的模式。自定义插件可禁止特定函数或强制命名规范。单元测试在裸机环境可借助 QEMU 与 Unity/CMock 框架；属性测试用 QuickCheck 或 Proptest 生成边界输入，验证算法在极端值下的鲁棒性。CI 流水线可分层：先交叉编译静态检查，再在真实硬件执行集成测试；固件镜像则裁剪段表，仅保留必要代码与常量，减小 Flash 占用。\par
+\chapter{真实案例}
+一个八位 MCU 上的小型 LISP 解释器在四 KB Flash 和五百一十二字节 RAM 的约束下，采用字节码、引用计数与零拷贝字符串实现最小可行环境。MISRA-C 合规的汽车 ECU 固件禁止递归与动态内存，通过形式化状态机和自动生成的 MISRA 矩阵实现可追溯的控制流。WebAssembly 沙箱中的图像滤镜受限于四 MB 线性内存，借助 SIMD 指令、内存对齐与分块处理，在保证安全边界的同时达到接近原生速度。\par
+\chapter{度量与持续改进}
+建立「限制看板」实时统计 RAM/ROM 使用率、圈复杂度与堆分配次数，能让团队在编码阶段就发现越界风险。定期进行「限制演练」，故意降低编译选项或模拟网络中断，验证优雅降级策略是否生效。\par
+\chapter{常见误区与反模式}
+过早手动优化是常见误区，应先用剖析器定位真正热点，再决定是否值得写内联汇编。滥用宏或条件编译会让控制流隐晦，优先使用 \texttt{if constexpr} 或策略类在编译期做分支。受限并不等于混乱，命名、模块边界与文档仍需保持清晰，以免日后维护成本失控。\par
+受限是创新的催化剂，而非阻碍。把限制当成编译器级的需求规格，提前思考、提前验证，最终交付的代码往往比在宽松环境下写出的版本更加可靠、高效。\par
